@@ -66,7 +66,7 @@ function InitPage() {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>NodeSeek RSS 监控 - 初始化</title>
-        <link href="/style.css" rel="stylesheet" />
+        <link href="/src/style.css" rel="stylesheet" />
       </head>
       <body>
         <div class="container">
@@ -132,7 +132,7 @@ function LoginPage() {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>NodeSeek RSS 监控 - 登录</title>
-        <link href="/style.css" rel="stylesheet" />
+        <link href="/src/style.css" rel="stylesheet" />
       </head>
       <body>
         <div class="container">
@@ -187,7 +187,7 @@ function DashboardPage() {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>NodeSeek RSS 监控 - 控制台</title>
-        <link href="/style.css" rel="stylesheet" />
+        <link href="/src/style.css" rel="stylesheet" />
       </head>
       <body>
         <div class="dashboard">
@@ -331,7 +331,7 @@ function ErrorPage(message: string) {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>错误 - NodeSeek RSS 监控</title>
-        <link href="/style.css" rel="stylesheet" />
+        <link href="/src/style.css" rel="stylesheet" />
       </head>
       <body>
         <div class="container">

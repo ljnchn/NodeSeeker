@@ -1,9 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "nodeseeker",
+  "name": "nodeseeker-dev",
   "compatibility_date": "2024-04-01",
   "compatibility_flags": ["nodejs_compat_v2"],
-  "main": "./dist/index.js",
+  "main": "./src/index.tsx",
   "d1_databases": [
     {
       "binding": "DB",
@@ -11,10 +11,7 @@
       "database_id": "a06471fa-a92e-47e6-9cb1-c37e5c3b8ae1"
     }
   ],
-  "triggers": {
-    "crons": ["*/1 * * * *"]
-  },
   "vars": {
     "ENVIRONMENT": "development"
   }
-}
+} 

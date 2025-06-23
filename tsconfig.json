@@ -2,14 +2,17 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "moduleResolution": "bundler",
     "strict": true,
     "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "lib": [
       "ESNext"
     ],
-    "types": ["vite/client"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
   },
+  "include": ["src/**/*", "scripts/**/*", "worker-configuration.d.ts"],
+  "exclude": ["node_modules", "dist"]
 }

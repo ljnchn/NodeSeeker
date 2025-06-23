@@ -8,7 +8,7 @@ export function LoginPage() {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>NodeSeek RSS 监控 - 登录</title>
-        <link href="/src/style.css" rel="stylesheet" />
+        <link href="/style.css" rel="stylesheet" />
       </head>
       <body>
         <div class="container">

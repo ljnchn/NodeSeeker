@@ -7,12 +7,12 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "nodeseeker-db",
-      "database_id": "your-database-id-here"
+      "database_name": "nodeseeker",
+      "database_id": "a06471fa-a92e-47e6-9cb1-c37e5c3b8ae1"
     }
   ],
   "triggers": {
-    "crons": ["0 */10 * * * *"]
+    "crons": ["*/1 * * * *"]
   },
   "vars": {
     "ENVIRONMENT": "development"

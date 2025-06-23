@@ -158,6 +158,17 @@ export class AuthService {
         };
       }
 
+      // 初始化数据库表
+      try {
+        await this.dbService.initializeTables();
+      } catch (error) {
+        console.error('数据库表初始化失败:', error);
+        return {
+          success: false,
+          message: `数据库表初始化失败: ${error}`
+        };
+      }
+
       // 明文存储密码
       const plainPassword = request.password;
 
@@ -175,7 +186,7 @@ export class AuthService {
 
       return {
         success: true,
-        message: '注册成功',
+        message: '系统初始化成功',
         token,
         user: {
           username: config.username,
@@ -321,6 +332,18 @@ export class AuthService {
    */
   async checkInitialization(): Promise<{ initialized: boolean; message: string }> {
     try {
+      // 确保数据库表已创建（如果不存在则创建）
+      try {
+        await this.dbService.initializeTables();
+      } catch (error) {
+        console.error('数据库表初始化检查失败:', error);
+        return {
+          initialized: false,
+          message: `数据库表初始化检查失败: ${error}`
+        };
+      }
+
+      // 检查是否已经有用户配置
       const isInitialized = await this.dbService.isInitialized();
       return {
         initialized: isInitialized,

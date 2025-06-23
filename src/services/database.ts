@@ -1,3 +1,4 @@
+// D1Database 类型在 worker-configuration.d.ts 中已定义
 import { D1Database } from '@cloudflare/workers-types';
 
 export interface BaseConfig {
@@ -39,6 +40,104 @@ export interface KeywordSub {
 
 export class DatabaseService {
   constructor(private db: D1Database) {}
+
+  /**
+   * 检查数据库表是否存在
+   */
+  private async checkTablesExist(): Promise<boolean> {
+    try {
+      // 检查主要表是否存在
+      const tables = ['base_config', 'posts', 'keywords_sub'];
+      
+      for (const table of tables) {
+        const result = await this.db.prepare(`
+          SELECT name FROM sqlite_master 
+          WHERE type='table' AND name=?
+        `).bind(table).first();
+        
+        if (!result) {
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('检查数据库表存在性失败:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 初始化数据库表
+   */
+  async initializeTables(): Promise<void> {
+    try {
+      // 检查表是否已存在，如果存在则跳过初始化
+      const tablesExist = await this.checkTablesExist();
+      if (tablesExist) {
+        console.log('数据库表已存在，跳过初始化');
+        return;
+      }
+
+      console.log('开始初始化数据库表...');
+
+      // 创建配置表
+      await this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS base_config (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT NOT NULL,
+          password TEXT NOT NULL,
+          bot_token TEXT DEFAULT NULL,
+          chat_id TEXT NOT NULL,
+          stop_push INTEGER DEFAULT 0,
+          only_title INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+
+      // 创建文章表
+      await this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS posts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          post_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          memo TEXT NOT NULL,
+          category TEXT NOT NULL,
+          creator TEXT NOT NULL,
+          push_status INTEGER DEFAULT 0,
+          sub_id INTEGER DEFAULT NULL,
+          pub_date DATETIME NOT NULL,
+          push_date DATETIME DEFAULT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+
+      // 创建文章表的索引
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_posts_post_id ON posts(post_id)
+      `).run();
+
+      // 创建关键词订阅表
+      await this.db.prepare(`
+        CREATE TABLE IF NOT EXISTS keywords_sub (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          keyword1 TEXT NOT NULL,
+          keyword2 TEXT DEFAULT NULL,
+          keyword3 TEXT DEFAULT NULL,
+          creator TEXT NULL,
+          category TEXT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
+
+      console.log('数据库表初始化完成');
+    } catch (error) {
+      console.error('数据库表初始化失败:', error);
+      throw new Error(`数据库表初始化失败: ${error}`);
+    }
+  }
 
   // 基础配置相关操作
   async getBaseConfig(): Promise<BaseConfig | null> {

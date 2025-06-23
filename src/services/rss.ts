@@ -1,4 +1,3 @@
-import Parser from 'rss-parser';
 import { DatabaseService, Post } from './database';
 
 export interface RSSItem {
@@ -22,19 +21,73 @@ export interface ParsedPost {
 }
 
 export class RSSService {
-  private parser: Parser;
   private readonly RSS_URL = 'https://rss.nodeseek.com/';
 
-  constructor(private dbService: DatabaseService) {
-    this.parser = new Parser({
-      customFields: {
-        item: [
-          ['dc:creator', 'creator'],
-          ['category', 'category'],
-          ['description', 'description']
-        ]
+  constructor(private dbService: DatabaseService) {}
+
+  /**
+   * 从 XML 文本中提取标签内容
+   */
+  private extractTagContent(xml: string, tagName: string): string {
+    const regex = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)</${tagName}>`, 'i');
+    const match = xml.match(regex);
+    return match ? match[1].trim() : '';
+  }
+
+  /**
+   * 从 XML 文本中提取 CDATA 内容
+   */
+  private extractCDATA(text: string): string {
+    const cdataMatch = text.match(/<!\[CDATA\[([\s\S]*?)\]\]>/);
+    return cdataMatch ? cdataMatch[1] : text;
+  }
+
+  /**
+   * 解析 RSS XML 数据
+   */
+  private parseRSSXML(xmlText: string): RSSItem[] {
+    try {
+      // 提取所有 <item> 元素
+      const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
+      const items: RSSItem[] = [];
+      let match;
+
+      while ((match = itemRegex.exec(xmlText)) !== null) {
+        const itemXML = match[1];
+        
+        // 提取各个字段
+        const title = this.extractCDATA(this.extractTagContent(itemXML, 'title'));
+        const link = this.extractTagContent(itemXML, 'link');
+        const pubDate = this.extractTagContent(itemXML, 'pubDate');
+        const creator = this.extractTagContent(itemXML, 'dc:creator') || this.extractTagContent(itemXML, 'author');
+        const category = this.extractTagContent(itemXML, 'category');
+        const description = this.extractCDATA(this.extractTagContent(itemXML, 'description'));
+        const content = this.extractCDATA(this.extractTagContent(itemXML, 'content:encoded') || description);
+        const guid = this.extractTagContent(itemXML, 'guid') || link;
+
+        // 创建清理后的摘要
+        let contentSnippet = description.replace(/<[^>]*>/g, '').trim();
+        if (contentSnippet.length > 200) {
+          contentSnippet = contentSnippet.substring(0, 200) + '...';
+        }
+
+        items.push({
+          title,
+          link,
+          pubDate,
+          creator,
+          category,
+          contentSnippet,
+          content,
+          guid
+        });
       }
-    });
+
+      return items;
+    } catch (error) {
+      console.error('RSS XML 解析失败:', error);
+      throw new Error(`RSS XML 解析失败: ${error}`);
+    }
   }
 
   /**
@@ -43,25 +96,33 @@ export class RSSService {
   async fetchAndParseRSS(): Promise<RSSItem[]> {
     try {
       console.log('开始抓取 RSS 数据...');
-      const feed = await this.parser.parseURL(this.RSS_URL);
       
-      if (!feed.items || feed.items.length === 0) {
+      const response = await fetch(this.RSS_URL, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Language': 'zh-CN,zh;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          Referer: "https://www.nodeseek.com/",
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const xmlText = await response.text();
+      const items = this.parseRSSXML(xmlText);
+      
+      if (!items || items.length === 0) {
         console.log('RSS 数据为空');
         return [];
       }
 
-      console.log(`成功抓取到 ${feed.items.length} 条 RSS 数据`);
-      
-      return feed.items.map(item => ({
-        title: item.title || '',
-        link: item.link || '',
-        pubDate: item.pubDate || '',
-        creator: (item as any).creator || '',
-        category: (item as any).category || '',
-        contentSnippet: item.contentSnippet || '',
-        content: item.content || '',
-        guid: item.guid || item.link || ''
-      }));
+      console.log(`成功抓取到 ${items.length} 条 RSS 数据`);
+      return items;
     } catch (error) {
       console.error('RSS 抓取失败:', error);
       throw new Error(`RSS 抓取失败: ${error}`);

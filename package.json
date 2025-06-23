@@ -4,9 +4,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "$npm_execpath run build && vite preview",
-    "deploy": "$npm_execpath run build && wrangler deploy",
-    "deploy:prod": "$npm_execpath run build && wrangler deploy --config wrangler.prod.jsonc",
+    "preview": "pnpm run build && vite preview",
+    "deploy": "pnpm run build && wrangler deploy",
+    "deploy:prod": "pnpm run build && wrangler deploy --config wrangler.prod.jsonc",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "test": "node scripts/test.js",
     "deploy:auto": "node scripts/deploy.js",
@@ -17,8 +17,7 @@
     "logs:prod": "wrangler tail --name nodeseeker-prod"
   },
   "dependencies": {
-    "hono": "^4.8.2",
-    "rss-parser": "^3.13.0"
+    "hono": "^4.8.2"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.2.3",

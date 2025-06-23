@@ -7,18 +7,15 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "nodeseeker-prod-db",
-      "database_id": "your-production-database-id-here"
+      "database_name": "nodeseeker",
+      "database_id": "a06471fa-a92e-47e6-9cb1-c37e5c3b8ae1"
     }
   ],
   "triggers": {
-    "crons": ["0 */5 * * * *"]
+    "crons": ["*/1 * * * *"]
   },
   "vars": {
     "ENVIRONMENT": "production"
-  },
-  "limits": {
-    "cpu_ms": 30000
   },
   "placement": {
     "mode": "smart"

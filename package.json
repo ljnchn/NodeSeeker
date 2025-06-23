@@ -6,10 +6,19 @@
     "build": "vite build",
     "preview": "$npm_execpath run build && vite preview",
     "deploy": "$npm_execpath run build && wrangler deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "deploy:prod": "$npm_execpath run build && wrangler deploy --config wrangler.prod.jsonc",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "test": "node scripts/test.js",
+    "deploy:auto": "node scripts/deploy.js",
+    "db:create": "wrangler d1 create nodeseeker-db",
+    "db:migrate": "wrangler d1 execute nodeseeker-db --file=./migrations/0001_initial.sql",
+    "db:migrate:prod": "wrangler d1 execute nodeseeker-prod-db --file=./migrations/0001_initial.sql",
+    "logs": "wrangler tail",
+    "logs:prod": "wrangler tail --name nodeseeker-prod"
   },
   "dependencies": {
-    "hono": "^4.8.2"
+    "hono": "^4.8.2",
+    "rss-parser": "^3.13.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.2.3",

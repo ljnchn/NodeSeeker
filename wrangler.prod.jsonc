@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nodeseeker-prod",
+  "compatibility_date": "2024-04-01",
+  "compatibility_flags": ["nodejs_compat_v2"],
+  "main": "./src/index.tsx",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nodeseeker-prod-db",
+      "database_id": "your-production-database-id-here"
+    }
+  ],
+  "triggers": {
+    "crons": ["0 */5 * * * *"]
+  },
+  "vars": {
+    "ENVIRONMENT": "production"
+  },
+  "limits": {
+    "cpu_ms": 30000
+  },
+  "placement": {
+    "mode": "smart"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

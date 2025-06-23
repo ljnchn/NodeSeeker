@@ -1,0 +1,256 @@
+import Parser from 'rss-parser';
+import { DatabaseService, Post } from './database';
+
+export interface RSSItem {
+  title: string;
+  link: string;
+  pubDate: string;
+  creator: string;
+  category: string;
+  contentSnippet: string;
+  content: string;
+  guid: string;
+}
+
+export interface ParsedPost {
+  post_id: number;
+  title: string;
+  memo: string;
+  category: string;
+  creator: string;
+  pub_date: string;
+}
+
+export class RSSService {
+  private parser: Parser;
+  private readonly RSS_URL = 'https://rss.nodeseek.com/';
+
+  constructor(private dbService: DatabaseService) {
+    this.parser = new Parser({
+      customFields: {
+        item: [
+          ['dc:creator', 'creator'],
+          ['category', 'category'],
+          ['description', 'description']
+        ]
+      }
+    });
+  }
+
+  /**
+   * 抓取并解析 RSS 数据
+   */
+  async fetchAndParseRSS(): Promise<RSSItem[]> {
+    try {
+      console.log('开始抓取 RSS 数据...');
+      const feed = await this.parser.parseURL(this.RSS_URL);
+      
+      if (!feed.items || feed.items.length === 0) {
+        console.log('RSS 数据为空');
+        return [];
+      }
+
+      console.log(`成功抓取到 ${feed.items.length} 条 RSS 数据`);
+      
+      return feed.items.map(item => ({
+        title: item.title || '',
+        link: item.link || '',
+        pubDate: item.pubDate || '',
+        creator: (item as any).creator || '',
+        category: (item as any).category || '',
+        contentSnippet: item.contentSnippet || '',
+        content: item.content || '',
+        guid: item.guid || item.link || ''
+      }));
+    } catch (error) {
+      console.error('RSS 抓取失败:', error);
+      throw new Error(`RSS 抓取失败: ${error}`);
+    }
+  }
+
+  /**
+   * 从链接中提取 post_id
+   */
+  private extractPostId(link: string): number | null {
+    try {
+      // NodeSeek 的链接格式通常是 https://www.nodeseek.com/post-{id}-1
+      const match = link.match(/post-(\d+)-/);
+      if (match && match[1]) {
+        return parseInt(match[1], 10);
+      }
+      
+      // 备用方案：从 URL 参数中提取
+      const url = new URL(link);
+      const id = url.searchParams.get('id');
+      if (id) {
+        return parseInt(id, 10);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('提取 post_id 失败:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 清洗和格式化数据
+   */
+  private cleanAndFormatData(item: RSSItem): ParsedPost | null {
+    const postId = this.extractPostId(item.link);
+    if (!postId) {
+      console.warn('无法提取 post_id:', item.link);
+      return null;
+    }
+
+    // 清洗标题
+    const title = item.title.trim().replace(/\s+/g, ' ');
+    
+    // 清洗内容摘要
+    let memo = item.contentSnippet || item.content || '';
+    memo = memo.replace(/<[^>]*>/g, ''); // 移除 HTML 标签
+    memo = memo.trim().replace(/\s+/g, ' ');
+    memo = memo.substring(0, 500); // 限制长度
+
+    // 清洗分类
+    const category = item.category ? item.category.trim() : '';
+    
+    // 清洗创建者
+    const creator = item.creator ? item.creator.trim() : '';
+
+    // 格式化发布时间
+    let pubDate: string;
+    try {
+      const date = new Date(item.pubDate);
+      if (isNaN(date.getTime())) {
+        pubDate = new Date().toISOString();
+      } else {
+        pubDate = date.toISOString();
+      }
+    } catch (error) {
+      pubDate = new Date().toISOString();
+    }
+
+    return {
+      post_id: postId,
+      title,
+      memo,
+      category,
+      creator,
+      pub_date: pubDate
+    };
+  }
+
+  /**
+   * 处理新的 RSS 数据
+   */
+  async processNewRSSData(): Promise<{ processed: number; new: number; errors: number }> {
+    try {
+      const rssItems = await this.fetchAndParseRSS();
+      
+      let processed = 0;
+      let newPosts = 0;
+      let errors = 0;
+
+      for (const item of rssItems) {
+        try {
+          processed++;
+          
+          const parsedPost = this.cleanAndFormatData(item);
+          if (!parsedPost) {
+            errors++;
+            continue;
+          }
+
+          // 检查是否已存在
+          const existingPost = await this.dbService.getPostByPostId(parsedPost.post_id);
+          if (existingPost) {
+            console.log(`文章已存在: ${parsedPost.post_id}`);
+            continue;
+          }
+
+          // 创建新文章
+          await this.dbService.createPost({
+            ...parsedPost,
+            push_status: 0 // 默认未推送
+          });
+
+          newPosts++;
+          console.log(`新增文章: ${parsedPost.title} (ID: ${parsedPost.post_id})`);
+          
+        } catch (error) {
+          errors++;
+          console.error('处理单条 RSS 数据失败:', error);
+        }
+      }
+
+      console.log(`RSS 处理完成: 处理 ${processed} 条，新增 ${newPosts} 条，错误 ${errors} 条`);
+      
+      return {
+        processed,
+        new: newPosts,
+        errors
+      };
+    } catch (error) {
+      console.error('处理 RSS 数据失败:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取最新的文章数据（用于测试）
+   */
+  async getLatestPosts(limit: number = 5): Promise<Post[]> {
+    return await this.dbService.getRecentPosts(limit);
+  }
+
+  /**
+   * 手动触发 RSS 更新
+   */
+  async manualUpdate(): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const result = await this.processNewRSSData();
+      return {
+        success: true,
+        message: `RSS 更新成功`,
+        data: result
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `RSS 更新失败: ${error}`
+      };
+    }
+  }
+
+  /**
+   * 验证 RSS 源是否可访问
+   */
+  async validateRSSSource(): Promise<{ accessible: boolean; message: string }> {
+    try {
+      const response = await fetch(this.RSS_URL, {
+        method: 'HEAD',
+        headers: {
+          'User-Agent': 'NodeSeeker RSS Bot 1.0'
+        }
+      });
+
+      if (response.ok) {
+        return {
+          accessible: true,
+          message: 'RSS 源可正常访问'
+        };
+      } else {
+        return {
+          accessible: false,
+          message: `RSS 源访问失败: HTTP ${response.status}`
+        };
+      }
+    } catch (error) {
+      return {
+        accessible: false,
+        message: `RSS 源访问失败: ${error}`
+      };
+    }
+  }
+}

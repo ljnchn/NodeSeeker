@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "nodeseeker-prod",
+  "name": "nodeseeker",
   "compatibility_date": "2024-04-01",
   "compatibility_flags": ["nodejs_compat_v2"],
   "main": "./src/index.tsx",
@@ -22,5 +22,8 @@
   },
   "observability": {
     "enabled": true
+  },
+  "assets": {
+    "directory": "./dist"
   }
 }

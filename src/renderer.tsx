@@ -6,7 +6,7 @@ export const renderer = jsxRenderer(({ children }) => {
     <html>
       <head>
         <ViteClient />
-        <Link href="/src/style.css" rel="stylesheet" />
+        <Link href="/css/style.css" rel="stylesheet" />
       </head>
       <body>{children}</body>
     </html>

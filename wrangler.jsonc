@@ -3,7 +3,7 @@
   "name": "nodeseeker",
   "compatibility_date": "2024-04-01",
   "compatibility_flags": ["nodejs_compat_v2"],
-  "main": "./dist/index.js",
+  "main": "./src/index.tsx",
   "d1_databases": [
     {
       "binding": "DB",

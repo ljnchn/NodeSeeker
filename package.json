@@ -2,9 +2,9 @@
   "name": "NodeSeeker",
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev --config wrangler.dev.jsonc",
-    "build": "node scripts/build.js",
-    "preview": "pnpm run build && wrangler preview",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "pnpm run build && vite preview",
     "deploy": "pnpm run build && wrangler deploy",
     "deploy:prod": "pnpm run build && wrangler deploy --config wrangler.prod.jsonc",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
@@ -20,8 +20,9 @@
     "hono": "^4.8.2"
   },
   "devDependencies": {
-    "esbuild": "^0.19.12",
-    "typescript": "^5.3.3",
+    "@cloudflare/vite-plugin": "^1.2.3",
+    "vite": "^6.3.5",
+    "vite-ssr-components": "^0.3.0",
     "wrangler": "^4.17.0"
   }
 }

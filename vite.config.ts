@@ -14,9 +14,8 @@ export default defineConfig({
       external: ['hono', 'hono/html', 'hono/cors', 'hono/jsx-renderer']
     },
     target: 'esnext',
-    ssr: true,
-    copyPublicDir: true
+    ssr: true
   },
-  publicDir: 'public',
-  base: '/'
+  publicDir: 'public'
 })
+  

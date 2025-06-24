@@ -1,3 +1,4 @@
+import { Bot, Context, webhookCallback } from 'grammy';
 import { DatabaseService, Post, KeywordSub } from './database';
 
 export interface TelegramUpdate {
@@ -37,178 +38,140 @@ export interface TelegramResponse {
 }
 
 export class TelegramService {
-  private readonly API_BASE = 'https://api.telegram.org/bot';
+  private bot: Bot;
 
   constructor(
     private dbService: DatabaseService,
     private botToken: string
-  ) {}
+  ) {
+    this.bot = new Bot(botToken);
+    this.setupHandlers();
+  }
+
+  /**
+   * 设置命令处理器
+   */
+  private setupHandlers(): void {
+    // 处理 /start 命令
+    this.bot.command('start', async (ctx) => {
+      await this.handleStartCommand(ctx);
+    });
+
+    // 处理 /stop 命令
+    this.bot.command('stop', async (ctx) => {
+      await this.handleStopCommand(ctx);
+    });
+
+    // 处理 /resume 命令
+    this.bot.command('resume', async (ctx) => {
+      await this.handleResumeCommand(ctx);
+    });
+
+    // 处理 /list 命令
+    this.bot.command('list', async (ctx) => {
+      await this.handleListCommand(ctx);
+    });
+
+    // 处理 /add 命令
+    this.bot.command('add', async (ctx) => {
+      await this.handleAddCommand(ctx);
+    });
+
+    // 处理 /delete 命令
+    this.bot.command('delete', async (ctx) => {
+      await this.handleDeleteCommand(ctx);
+    });
+
+    // 处理 /post 命令
+    this.bot.command('post', async (ctx) => {
+      await this.handlePostCommand(ctx);
+    });
+
+    // 处理 /help 命令
+    this.bot.command('help', async (ctx) => {
+      await this.handleHelpCommand(ctx);
+    });
+
+    // 处理其他消息
+    this.bot.on('message:text', async (ctx) => {
+      if (!ctx.message.text.startsWith('/')) {
+        await ctx.reply('请使用命令与我交互。发送 /help 查看可用命令。');
+      }
+    });
+  }
+
+  /**
+   * 获取 webhook 回调
+   */
+  getWebhookCallback() {
+    return webhookCallback(this.bot, 'cloudflare-mod');
+  }
 
   /**
    * 发送消息到 Telegram
    */
-  async sendMessage(chatId: string | number, text: string, parseMode: string = 'HTML'): Promise<TelegramResponse> {
+  async sendMessage(chatId: string | number, text: string): Promise<boolean> {
     try {
-      const url = `${this.API_BASE}${this.botToken}/sendMessage`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: text,
-          parse_mode: parseMode,
-          disable_web_page_preview: true
-        })
-      });
-
-      const result = await response.json() as TelegramResponse;
-      
-      if (!result.ok) {
-        console.error('Telegram 发送消息失败:', result.description);
-      }
-      
-      return result;
+      await this.bot.api.sendMessage(chatId, text, { parse_mode: 'Markdown' });
+      return true;
     } catch (error) {
       console.error('发送 Telegram 消息时出错:', error);
-      return {
-        ok: false,
-        description: `发送失败: ${error}`
-      };
+      return false;
     }
   }
 
   /**
    * 设置 Webhook
    */
-  async setWebhook(webhookUrl: string): Promise<TelegramResponse> {
+  async setWebhook(webhookUrl: string): Promise<boolean> {
     try {
-      const url = `${this.API_BASE}${this.botToken}/setWebhook`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: webhookUrl
-        })
-      });
-
-      return await response.json() as TelegramResponse;
+      await this.bot.api.setWebhook(webhookUrl);
+      return true;
     } catch (error) {
       console.error('设置 Webhook 失败:', error);
-      return {
-        ok: false,
-        description: `设置 Webhook 失败: ${error}`
-      };
+      return false;
     }
   }
 
   /**
    * 获取 Bot 信息
    */
-  async getBotInfo(): Promise<TelegramResponse> {
+  async getBotInfo() {
     try {
-      const url = `${this.API_BASE}${this.botToken}/getMe`;
-      const response = await fetch(url);
-      return await response.json() as TelegramResponse;
+      return await this.bot.api.getMe();
     } catch (error) {
       console.error('获取 Bot 信息失败:', error);
-      return {
-        ok: false,
-        description: `获取 Bot 信息失败: ${error}`
-      };
-    }
-  }
-
-  /**
-   * 处理 Telegram Webhook 更新
-   */
-  async handleWebhookUpdate(update: TelegramUpdate): Promise<void> {
-    if (!update.message || !update.message.text) {
-      return;
-    }
-
-    const message = update.message;
-    const chatId = message.chat.id;
-    const text = message.text.trim();
-    const userId = message.from.id;
-
-    console.log(`收到消息: ${text} 来自用户: ${userId}`);
-
-    // 处理命令
-    if (text.startsWith('/')) {
-      await this.handleCommand(chatId, text, message);
-    } else {
-      await this.sendMessage(chatId, '请使用命令与我交互。发送 /help 查看可用命令。');
-    }
-  }
-
-  /**
-   * 处理命令
-   */
-  private async handleCommand(chatId: number, command: string, message: TelegramMessage): Promise<void> {
-    const parts = command.split(' ');
-    const cmd = parts[0].toLowerCase();
-    const args = parts.slice(1);
-
-    switch (cmd) {
-      case '/start':
-        await this.handleStartCommand(chatId, message);
-        break;
-      case '/stop':
-        await this.handleStopCommand(chatId);
-        break;
-      case '/resume':
-        await this.handleResumeCommand(chatId);
-        break;
-      case '/list':
-        await this.handleListCommand(chatId);
-        break;
-      case '/add':
-        await this.handleAddCommand(chatId, args);
-        break;
-      case '/delete':
-        await this.handleDeleteCommand(chatId, args);
-        break;
-      case '/post':
-        await this.handlePostCommand(chatId);
-        break;
-      case '/help':
-        await this.handleHelpCommand(chatId);
-        break;
-      default:
-        await this.sendMessage(chatId, '未知命令。发送 /help 查看可用命令。');
+      return null;
     }
   }
 
   /**
    * 处理 /start 命令
    */
-  private async handleStartCommand(chatId: number, message: TelegramMessage): Promise<void> {
+  private async handleStartCommand(ctx: Context): Promise<void> {
     const config = await this.dbService.getBaseConfig();
     
     if (!config) {
-      await this.sendMessage(chatId, '系统尚未初始化，请先在网页端完成初始化设置。');
+      await ctx.reply('系统尚未初始化，请先在网页端完成初始化设置。');
       return;
     }
+
+    const chatId = ctx.chat?.id;
+    if (!chatId) return;
 
     // 更新 chat_id
     await this.dbService.updateBaseConfig({ chat_id: chatId.toString() });
 
-    const userInfo = `${message.from.first_name}${message.from.last_name ? ' ' + message.from.last_name : ''}`;
+    const userInfo = `${ctx.from?.first_name}${ctx.from?.last_name ? ' ' + ctx.from.last_name : ''}`;
     const welcomeText = `
-🎉 欢迎使用 NodeSeek RSS 监控机器人！
+🎉 **欢迎使用 NodeSeek RSS 监控机器人！**
 
-👤 用户信息：${userInfo}
-🆔 Chat ID：${chatId}
+👤 **用户信息：** ${userInfo}
+🆔 **Chat ID：** ${chatId}
 
 ✅ 已保存您的 Chat ID，现在可以接收推送消息了。
 
-📋 可用命令：
+📋 **可用命令：**
 /help - 查看帮助
 /list - 查看订阅列表
 /add - 添加订阅
@@ -218,57 +181,59 @@ export class TelegramService {
 /resume - 恢复推送
     `;
 
-    await this.sendMessage(chatId, welcomeText);
+    await ctx.reply(welcomeText, { parse_mode: 'Markdown' });
   }
 
   /**
    * 处理 /stop 命令
    */
-  private async handleStopCommand(chatId: number): Promise<void> {
+  private async handleStopCommand(ctx: Context): Promise<void> {
     await this.dbService.updateBaseConfig({ stop_push: 1 });
-    await this.sendMessage(chatId, '✅ 已停止推送。发送 /resume 可恢复推送。');
+    await ctx.reply('✅ 已停止推送。发送 /resume 可恢复推送。');
   }
 
   /**
    * 处理 /resume 命令
    */
-  private async handleResumeCommand(chatId: number): Promise<void> {
+  private async handleResumeCommand(ctx: Context): Promise<void> {
     await this.dbService.updateBaseConfig({ stop_push: 0 });
-    await this.sendMessage(chatId, '✅ 已恢复推送。');
+    await ctx.reply('✅ 已恢复推送。');
   }
 
   /**
    * 处理 /list 命令
    */
-  private async handleListCommand(chatId: number): Promise<void> {
+  private async handleListCommand(ctx: Context): Promise<void> {
     const subs = await this.dbService.getAllKeywordSubs();
     
     if (subs.length === 0) {
-      await this.sendMessage(chatId, '📝 暂无订阅。使用 /add 添加订阅。');
+      await ctx.reply('📝 暂无订阅。使用 /add 添加订阅。');
       return;
     }
 
-    let text = '📋 当前订阅列表：\n\n';
+    let text = '📋 **当前订阅列表：**\n\n';
     subs.forEach((sub, index) => {
-      text += `${index + 1}. ID: ${sub.id}\n`;
-      text += `   关键词：${sub.keyword1}`;
-      if (sub.keyword2) text += ` + ${sub.keyword2}`;
-      if (sub.keyword3) text += ` + ${sub.keyword3}`;
+      text += `${index + 1}\\. **ID:** ${sub.id}\n`;
+      text += `   **关键词：** ${sub.keyword1}`;
+      if (sub.keyword2) text += ` \\+ ${sub.keyword2}`;
+      if (sub.keyword3) text += ` \\+ ${sub.keyword3}`;
       text += '\n';
-      if (sub.creator) text += `   创建者：${sub.creator}\n`;
-      if (sub.category) text += `   分类：${sub.category}\n`;
+      if (sub.creator) text += `   **创建者：** ${sub.creator}\n`;
+      if (sub.category) text += `   **分类：** ${sub.category}\n`;
       text += '\n';
     });
 
-    await this.sendMessage(chatId, text);
+    await ctx.reply(text, { parse_mode: 'Markdown' });
   }
 
   /**
    * 处理 /add 命令
    */
-  private async handleAddCommand(chatId: number, args: string[]): Promise<void> {
+  private async handleAddCommand(ctx: Context): Promise<void> {
+    const args = ctx.message?.text?.split(' ').slice(1) || [];
+    
     if (args.length === 0) {
-      await this.sendMessage(chatId, '❌ 请提供关键词。\n用法：/add 关键词1 关键词2 关键词3');
+      await ctx.reply('❌ 请提供关键词。\n**用法：** /add 关键词1 关键词2 关键词3', { parse_mode: 'Markdown' });
       return;
     }
 
@@ -281,93 +246,95 @@ export class TelegramService {
         keyword3: keywords[2] || undefined
       });
 
-      let text = `✅ 订阅添加成功！\n\nID: ${sub.id}\n关键词：${sub.keyword1}`;
-      if (sub.keyword2) text += ` + ${sub.keyword2}`;
-      if (sub.keyword3) text += ` + ${sub.keyword3}`;
+      let text = `✅ **订阅添加成功！**\n\n**ID:** ${sub.id}\n**关键词：** ${sub.keyword1}`;
+      if (sub.keyword2) text += ` \\+ ${sub.keyword2}`;
+      if (sub.keyword3) text += ` \\+ ${sub.keyword3}`;
 
-      await this.sendMessage(chatId, text);
+      await ctx.reply(text, { parse_mode: 'Markdown' });
     } catch (error) {
-      await this.sendMessage(chatId, `❌ 添加订阅失败：${error}`);
+      await ctx.reply(`❌ 添加订阅失败：${error}`);
     }
   }
 
   /**
    * 处理 /delete 命令
    */
-  private async handleDeleteCommand(chatId: number, args: string[]): Promise<void> {
+  private async handleDeleteCommand(ctx: Context): Promise<void> {
+    const args = ctx.message?.text?.split(' ').slice(1) || [];
+    
     if (args.length === 0) {
-      await this.sendMessage(chatId, '❌ 请提供订阅 ID。\n用法：/delete 订阅ID');
+      await ctx.reply('❌ 请提供订阅 ID。\n**用法：** /delete 订阅ID', { parse_mode: 'Markdown' });
       return;
     }
 
     const id = parseInt(args[0]);
     if (isNaN(id)) {
-      await this.sendMessage(chatId, '❌ 订阅 ID 必须是数字。');
+      await ctx.reply('❌ 订阅 ID 必须是数字。');
       return;
     }
 
     try {
       const success = await this.dbService.deleteKeywordSub(id);
       if (success) {
-        await this.sendMessage(chatId, `✅ 订阅 ${id} 删除成功。`);
+        await ctx.reply(`✅ 订阅 ${id} 删除成功。`);
       } else {
-        await this.sendMessage(chatId, `❌ 订阅 ${id} 不存在。`);
+        await ctx.reply(`❌ 订阅 ${id} 不存在。`);
       }
     } catch (error) {
-      await this.sendMessage(chatId, `❌ 删除订阅失败：${error}`);
+      await ctx.reply(`❌ 删除订阅失败：${error}`);
     }
   }
 
   /**
    * 处理 /post 命令
    */
-  private async handlePostCommand(chatId: number): Promise<void> {
+  private async handlePostCommand(ctx: Context): Promise<void> {
     const posts = await this.dbService.getRecentPosts(10);
     
     if (posts.length === 0) {
-      await this.sendMessage(chatId, '📝 暂无文章数据。');
+      await ctx.reply('📝 暂无文章数据。');
       return;
     }
 
-    let text = '📰 最近10条文章：\n\n';
+    let text = '📰 **最近10条文章：**\n\n';
     posts.forEach((post, index) => {
       const status = post.push_status === 0 ? '⏳未推送' : 
                     post.push_status === 1 ? '✅已推送' : '❌无需推送';
       
-      text += `${index + 1}. ${post.title}\n`;
-      text += `   作者：${post.creator} | 分类：${post.category}\n`;
-      text += `   状态：${status}\n`;
-      text += `   时间：${new Date(post.pub_date).toLocaleString('zh-CN')}\n\n`;
+      text += `${index + 1}\\. [${post.title}](https://www.nodeseek.com/post-${post.post_id}-1)\n`;
+      text += `   **作者：** ${post.creator} \\| **分类：** ${post.category}\n`;
+      text += `   **状态：** ${status}\n`;
+      text += `   **时间：** ${new Date(post.pub_date).toLocaleString('zh-CN')}\n\n`;
     });
 
-    await this.sendMessage(chatId, text);
+    await ctx.reply(text, { parse_mode: 'Markdown' });
   }
 
   /**
    * 处理 /help 命令
    */
-  private async handleHelpCommand(chatId: number): Promise<void> {
+  private async handleHelpCommand(ctx: Context): Promise<void> {
     const helpText = `
-🤖 NodeSeek RSS 监控机器人
+🤖 **NodeSeek RSS 监控机器人**
 
-📋 可用命令：
+📋 **可用命令：**
 
-/start - 开始使用并保存用户信息
-/stop - 停止推送
-/resume - 恢复推送
-/list - 列出所有订阅
-/add 关键词1 关键词2 关键词3 - 添加订阅（最多3个关键词）
-/delete 订阅ID - 根据订阅ID删除订阅
-/post - 查看最近10条文章及推送状态
-/help - 显示此帮助信息
+/start \\- 开始使用并保存用户信息
+/stop \\- 停止推送
+/resume \\- 恢复推送
+/list \\- 列出所有订阅
+/add 关键词1 关键词2 关键词3 \\- 添加订阅（最多3个关键词）
+/delete 订阅ID \\- 根据订阅ID删除订阅
+/post \\- 查看最近10条文章及推送状态
+/help \\- 显示此帮助信息
 
-💡 使用说明：
-- 添加订阅后，系统会自动匹配包含关键词的文章
-- 可以设置多个关键词，文章需要包含所有关键词才会推送
-- 使用 /list 查看订阅ID，然后用 /delete 删除不需要的订阅
+💡 **使用说明：**
+\\- 添加订阅后，系统会自动匹配包含关键词的文章
+\\- 可以设置多个关键词，文章需要包含所有关键词才会推送
+\\- 使用 /list 查看订阅ID，然后用 /delete 删除不需要的订阅
     `;
 
-    await this.sendMessage(chatId, helpText);
+    await ctx.reply(helpText, { parse_mode: 'Markdown' });
   }
 
   /**
@@ -381,25 +348,23 @@ export class TelegramService {
       }
 
       const text = `
-🔔 <b>NodeSeek 新文章推送</b>
+🔔 **NodeSeek 新文章推送**
 
-📰 <b>${post.title}</b>
+📰 **[${post.title}](https://www.nodeseek.com/post-${post.post_id}-1)**
 
-👤 作者：${post.creator}
-🏷️ 分类：${post.category}
-🕒 时间：${new Date(post.pub_date).toLocaleString('zh-CN')}
+👤 **作者：** ${post.creator}
+🏷️ **分类：** ${post.category}
+🕒 **时间：** ${new Date(post.pub_date).toLocaleString('zh-CN')}
 
-📝 摘要：
+📝 **摘要：**
 ${post.memo}
 
-🔍 匹配关键词：${matchedSub.keyword1}${matchedSub.keyword2 ? ' + ' + matchedSub.keyword2 : ''}${matchedSub.keyword3 ? ' + ' + matchedSub.keyword3 : ''}
-
-🔗 <a href="https://www.nodeseek.com/post-${post.post_id}-1">查看原文</a>
+🔍 **匹配关键词：** ${matchedSub.keyword1}${matchedSub.keyword2 ? ' \\+ ' + matchedSub.keyword2 : ''}${matchedSub.keyword3 ? ' \\+ ' + matchedSub.keyword3 : ''}
       `;
 
-      const result = await this.sendMessage(config.chat_id, text);
+      const success = await this.sendMessage(config.chat_id, text);
       
-      if (result.ok) {
+      if (success) {
         // 更新推送状态
         await this.dbService.updatePostPushStatus(
           post.post_id, 

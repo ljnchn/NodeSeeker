@@ -17,7 +17,8 @@
     "logs:prod": "wrangler tail --name nodeseeker-prod"
   },
   "dependencies": {
-    "hono": "^4.8.2"
+    "hono": "^4.8.2",
+    "grammy": "^1.30.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.2.3",

@@ -637,13 +637,5 @@ function renderStats(stats) {
             <h3>推送消息</h3>
             <div class="number">${stats.total_messages || 0}</div>
         </div>
-        <div class="stat-card">
-            <h3>系统运行</h3>
-            <div class="number">${stats.uptime || '0天'}</div>
-        </div>
-        <div class="stat-card">
-            <h3>最后更新</h3>
-            <div class="number" style="font-size: 16px;">${stats.last_update || '从未'}</div>
-        </div>
     `;
 }

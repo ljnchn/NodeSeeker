@@ -415,21 +415,10 @@ apiRoutes.get('/stats/comprehensive', async (c) => {
     const dbService = c.get('dbService')
     const stats = await dbService.getComprehensiveStats()
     
-    // 计算运行时间（天数）
-    const startTime = new Date('2024-01-01') // 可以设置为系统实际启动时间
-    const uptime = Math.floor((Date.now() - startTime.getTime()) / (1000 * 60 * 60 * 24))
-    
-    // 格式化最后更新时间
-    const lastUpdate = stats.last_update 
-      ? new Date(stats.last_update).toLocaleString('zh-CN')
-      : '从未'
-    
     return c.json({
       success: true,
       data: {
-        ...stats,
-        uptime: `${uptime}天`,
-        last_update: lastUpdate
+        ...stats
       }
     })
   } catch (error) {

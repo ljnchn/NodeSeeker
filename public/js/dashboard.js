@@ -171,7 +171,7 @@ function updateBotStatus(isOnline = true) {
         if (isOnline && botInfo) {
             botStatusElement.textContent = '在线';
             botStatusElement.style.color = '#10b981';
-            botDetailElement.textContent = `@${botInfo.username || 'Unknown'}`;
+            botDetailElement.textContent = `@${botInfo.bot.first_name || 'Unknown'}`;
             botStatusCard.style.borderLeft = '4px solid #10b981';
         } else {
             botStatusElement.textContent = '离线';
@@ -563,7 +563,7 @@ function renderPosts(posts) {
                 ${post.category ? `<span>📂 ${post.category}</span>` : ''}
             </div>
             <div class="content">
-                ${post.description || ''}
+                ${post.memo || ''}
             </div>
             <div class="actions">
                 <a href="${post.link}" target="_blank" class="btn btn-primary">

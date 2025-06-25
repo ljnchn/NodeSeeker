@@ -218,24 +218,33 @@ export class TelegramService {
    * 处理 /list 命令
    */
   private async handleListCommand(ctx: Context): Promise<void> {
-    const subs = await this.dbService.getAllKeywordSubs();
+    const subscriptions = await this.dbService.getAllKeywordSubs();
     
-    if (subs.length === 0) {
-      await ctx.reply('📝 暂无订阅。使用 /add 添加订阅。');
+    if (subscriptions.length === 0) {
+      await ctx.reply('📝 暂无订阅记录。使用 /add 添加订阅。');
       return;
     }
 
     let text = '📋 **当前订阅列表：**\n\n';
-    subs.forEach((sub, index) => {
+    subscriptions.forEach((sub, index) => {
+      const keywords = [sub.keyword1, sub.keyword2, sub.keyword3]
+        .filter(k => k && k.trim().length > 0);
+      
       text += `${index + 1}\\. **ID:** ${sub.id}\n`;
-      text += `   **关键词：** ${sub.keyword1}`;
-      if (sub.keyword2) text += ` \\+ ${sub.keyword2}`;
-      if (sub.keyword3) text += ` \\+ ${sub.keyword3}`;
-      text += '\n';
-      if (sub.creator) text += `   **创建者：** ${sub.creator}\n`;
-      if (sub.category) text += `   **分类：** ${sub.category}\n`;
-      text += '\n';
+      text += `   **关键词：** ${keywords.join(' \\+ ')}\n`;
+      
+      if (sub.creator) {
+        text += `   **指定作者：** ${sub.creator}\n`;
+      }
+      
+      if (sub.category) {
+        text += `   **指定分类：** ${sub.category}\n`;
+      }
+      
+      text += `   **创建时间：** ${new Date(sub.created_at || '').toLocaleString('zh-CN')}\n\n`;
     });
+
+    text += '💡 **提示：** 使用 /delete 订阅ID 删除订阅';
 
     await ctx.reply(text, { parse_mode: 'Markdown' });
   }

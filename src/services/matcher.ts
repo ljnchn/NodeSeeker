@@ -5,7 +5,13 @@ export interface MatchResult {
   matched: boolean;
   subscription?: KeywordSub;
   matchedKeywords: string[];
-  matchType: 'title' | 'content' | 'both';
+  matchType: 'title' | 'content' | 'author' | 'category' | 'mixed';
+  matchDetails: {
+    titleMatches: string[];
+    contentMatches: string[];
+    authorMatches: string[];
+    categoryMatches: string[];
+  };
 }
 
 export interface PushResult {
@@ -57,11 +63,17 @@ export class MatcherService {
     const keywords = [subscription.keyword1, subscription.keyword2, subscription.keyword3]
       .filter(k => k && k.trim().length > 0);
 
-    if (keywords.length === 0) {
+    if (keywords.length === 0 && !subscription.creator && !subscription.category) {
       return {
         matched: false,
         matchedKeywords: [],
-        matchType: 'title'
+        matchType: 'title',
+        matchDetails: {
+          titleMatches: [],
+          contentMatches: [],
+          authorMatches: [],
+          categoryMatches: []
+        }
       };
     }
 
@@ -71,74 +83,119 @@ export class MatcherService {
     const creatorText = post.creator.toLowerCase();
     const categoryText = post.category.toLowerCase();
 
-    // 检查创建者过滤
+    // 检查作者精确匹配过滤（如果指定了creator，必须精确匹配）
     if (subscription.creator && subscription.creator.trim().length > 0) {
       const targetCreator = subscription.creator.toLowerCase().trim();
       if (!creatorText.includes(targetCreator)) {
         return {
           matched: false,
           matchedKeywords: [],
-          matchType: 'title'
+          matchType: 'title',
+          matchDetails: {
+            titleMatches: [],
+            contentMatches: [],
+            authorMatches: [],
+            categoryMatches: []
+          }
         };
       }
     }
 
-    // 检查分类过滤
+    // 检查分类精确匹配过滤（如果指定了category，必须精确匹配）
     if (subscription.category && subscription.category.trim().length > 0) {
       const targetCategory = subscription.category.toLowerCase().trim();
       if (!categoryText.includes(targetCategory)) {
         return {
           matched: false,
           matchedKeywords: [],
-          matchType: 'title'
+          matchType: 'title',
+          matchDetails: {
+            titleMatches: [],
+            contentMatches: [],
+            authorMatches: [],
+            categoryMatches: []
+          }
         };
       }
     }
 
-    // 关键词匹配
+    // 关键词匹配（扩展到标题、内容、作者、分类）
+    const matchDetails = {
+      titleMatches: [] as string[],
+      contentMatches: [] as string[],
+      authorMatches: [] as string[],
+      categoryMatches: [] as string[]
+    };
+
     const matchedKeywords: string[] = [];
-    let titleMatches = 0;
-    let contentMatches = 0;
+    let totalMatchedKeywords = 0;
 
     for (const keyword of keywords) {
       const lowerKeyword = keyword?.toLowerCase().trim() || '';
+      let keywordMatched = false;
       
+      // 检查标题匹配
       if (titleText.includes(lowerKeyword)) {
-        titleMatches++;
+        matchDetails.titleMatches.push(keyword || '');
+        keywordMatched = true;
+      }
+      
+      // 检查内容匹配（如果不是仅标题模式）
+      if (!keywordMatched && !config.only_title && contentText.includes(lowerKeyword)) {
+        matchDetails.contentMatches.push(keyword || '');
+        keywordMatched = true;
+      }
+      
+      // 检查作者匹配（如果没有指定具体的creator过滤条件）
+      if (!keywordMatched && !subscription.creator && creatorText.includes(lowerKeyword)) {
+        matchDetails.authorMatches.push(keyword || '');
+        keywordMatched = true;
+      }
+      
+      // 检查分类匹配（如果没有指定具体的category过滤条件）
+      if (!keywordMatched && !subscription.category && categoryText.includes(lowerKeyword)) {
+        matchDetails.categoryMatches.push(keyword || '');
+        keywordMatched = true;
+      }
+
+      if (keywordMatched) {
         matchedKeywords.push(keyword || '');
-      } else if (!config.only_title && contentText.includes(lowerKeyword)) {
-        contentMatches++;
-        matchedKeywords.push(keyword || '');
+        totalMatchedKeywords++;
       }
     }
 
     // 判断是否匹配（所有关键词都必须匹配）
-    const totalMatches = titleMatches + contentMatches;
-    const matched = totalMatches === keywords.length;
+    const matched = totalMatchedKeywords === keywords.length;
 
     if (!matched) {
       return {
         matched: false,
         matchedKeywords: [],
-        matchType: 'title'
+        matchType: 'title',
+        matchDetails
       };
     }
 
     // 确定匹配类型
-    let matchType: 'title' | 'content' | 'both';
-    if (titleMatches === keywords.length) {
+    let matchType: 'title' | 'content' | 'author' | 'category' | 'mixed';
+    if (matchDetails.titleMatches.length === keywords.length) {
       matchType = 'title';
-    } else if (contentMatches === keywords.length) {
+    } else if (matchDetails.contentMatches.length === keywords.length) {
       matchType = 'content';
+    } else if (matchDetails.authorMatches.length === keywords.length) {
+      matchType = 'author';
+    } else if (matchDetails.categoryMatches.length === keywords.length) {
+      matchType = 'category';
     } else {
-      matchType = 'both';
+      matchType = 'mixed';
     }
 
     return {
       matched: true,
       subscription,
       matchedKeywords,
-      matchType
+      matchType,
+      matchDetails
     };
   }
 
@@ -253,43 +310,6 @@ export class MatcherService {
     console.log(`推送处理完成: 处理 ${result.processed} 篇，推送 ${result.pushed} 篇，跳过 ${result.skipped} 篇，错误 ${result.errors} 篇`);
     
     return result;
-  }
-
-  /**
-   * 测试匹配规则
-   */
-  async testMatch(postId: number): Promise<{
-    success: boolean;
-    post?: Post;
-    matches: MatchResult[];
-    message: string;
-  }> {
-    try {
-      const post = await this.dbService.getPostByPostId(postId);
-      
-      if (!post) {
-        return {
-          success: false,
-          matches: [],
-          message: '文章不存在'
-        };
-      }
-
-      const matches = await this.checkPostMatches(post);
-
-      return {
-        success: true,
-        post,
-        matches,
-        message: matches.length > 0 ? `找到 ${matches.length} 个匹配的订阅` : '没有匹配的订阅'
-      };
-    } catch (error) {
-      return {
-        success: false,
-        matches: [],
-        message: `测试失败: ${error}`
-      };
-    }
   }
 
   /**

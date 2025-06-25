@@ -149,7 +149,7 @@ async function loadInitialData() {
 // 加载 Bot 信息
 async function loadBotInfo() {
     try {
-        const response = await apiRequest('/telegram/info', 'GET');
+        const response = await apiRequest('/api/telegram/info', 'GET');
         
         if (response.success) {
             botInfo = response.data;
@@ -301,7 +301,7 @@ async function testBotConnection() {
     btn.disabled = true;
 
     try {
-        const response = await apiRequest('/telegram/test', 'GET');
+        const response = await apiRequest('/api/telegram/getme', 'GET');
         
         if (response.success) {
             showMessage('Bot 连接测试成功', 'success');
@@ -334,7 +334,7 @@ async function setWebhook() {
     btn.disabled = true;
 
     try {
-        const response = await apiRequest('/telegram/webhook', 'POST');
+        const response = await apiRequest('/api/telegram/webhook', 'POST');
         
         if (response.success) {
             showMessage('Webhook 设置成功', 'success');

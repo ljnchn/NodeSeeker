@@ -101,14 +101,14 @@ export class MatcherService {
     let contentMatches = 0;
 
     for (const keyword of keywords) {
-      const lowerKeyword = keyword.toLowerCase().trim();
+      const lowerKeyword = keyword?.toLowerCase().trim() || '';
       
       if (titleText.includes(lowerKeyword)) {
         titleMatches++;
-        matchedKeywords.push(keyword);
+        matchedKeywords.push(keyword || '');
       } else if (!config.only_title && contentText.includes(lowerKeyword)) {
         contentMatches++;
-        matchedKeywords.push(keyword);
+        matchedKeywords.push(keyword || '');
       }
     }
 

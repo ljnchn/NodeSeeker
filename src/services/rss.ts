@@ -59,8 +59,8 @@ export class RSSService {
         const title = this.extractCDATA(this.extractTagContent(itemXML, 'title'));
         const link = this.extractTagContent(itemXML, 'link');
         const pubDate = this.extractTagContent(itemXML, 'pubDate');
-        const creator = this.extractTagContent(itemXML, 'dc:creator') || this.extractTagContent(itemXML, 'author');
-        const category = this.extractTagContent(itemXML, 'category');
+        const creator = this.extractCDATA(this.extractTagContent(itemXML, 'dc:creator'));
+        const category = this.extractCDATA(this.extractTagContent(itemXML, 'category'));
         const description = this.extractCDATA(this.extractTagContent(itemXML, 'description'));
         const content = this.extractCDATA(this.extractTagContent(itemXML, 'content:encoded') || description);
         const guid = this.extractTagContent(itemXML, 'guid') || link;

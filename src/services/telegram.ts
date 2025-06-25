@@ -347,19 +347,25 @@ export class TelegramService {
         return false;
       }
 
+      // 构建关键词字符串
+      const keywords = [matchedSub.keyword1, matchedSub.keyword2, matchedSub.keyword3, matchedSub.creator, matchedSub.category]
+        .filter(k => k && k.trim().length > 0)
+        .join(' ');
+
+        // 构建帖子链接
+        const postUrl = `https://www.nodeseek.com/post-${post.post_id}-1`;
+
+        // 去除 post.title 会影响markdown链接的符号
+        const title = post.title
+          .replace(/\[/g, "「")
+          .replace(/\]/g, "」")
+          .replace(/\(/g, "（")
+          .replace(/\)/g, "）");
+
       const text = `
-🔔 **NodeSeek 新文章推送**
+🎯 **${keywords}**
 
-📰 **[${post.title}](https://www.nodeseek.com/post-${post.post_id}-1)**
-
-👤 **作者：** ${post.creator}
-🏷️ **分类：** ${post.category}
-🕒 **时间：** ${new Date(post.pub_date).toLocaleString('zh-CN')}
-
-📝 **摘要：**
-${post.memo}
-
-🔍 **匹配关键词：** ${matchedSub.keyword1}${matchedSub.keyword2 ? ' \\+ ' + matchedSub.keyword2 : ''}${matchedSub.keyword3 ? ' \\+ ' + matchedSub.keyword3 : ''}
+📰 **[${title}](${postUrl})**
       `;
 
       const success = await this.sendMessage(config.chat_id, text);

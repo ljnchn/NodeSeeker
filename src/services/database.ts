@@ -1,6 +1,3 @@
-// D1Database 类型在 worker-configuration.d.ts 中已定义
-import { D1Database } from '@cloudflare/workers-types';
-
 export interface BaseConfig {
   id?: number;
   username: string;
@@ -122,7 +119,7 @@ export class DatabaseService {
       await this.db.prepare(`
         CREATE TABLE IF NOT EXISTS keywords_sub (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
-          keyword1 TEXT NOT NULL,
+          keyword1 TEXT DEFAULT NULL,
           keyword2 TEXT DEFAULT NULL,
           keyword3 TEXT DEFAULT NULL,
           creator TEXT NULL,
@@ -159,7 +156,7 @@ export class DatabaseService {
       config.only_title
     ).first();
     
-    return result as BaseConfig;
+    return result as unknown as BaseConfig;
   }
 
   async updateBaseConfig(config: Partial<BaseConfig>): Promise<BaseConfig | null> {
@@ -225,7 +222,7 @@ export class DatabaseService {
       post.push_date || null
     ).first();
 
-    return result as Post;
+    return result as unknown as Post;
   }
 
   async getPostByPostId(postId: number): Promise<Post | null> {
@@ -248,7 +245,7 @@ export class DatabaseService {
       LIMIT ?
     `).bind(limit).all();
     
-    return result.results as Post[];
+    return result.results as unknown as Post[];
   }
 
   async getUnpushedPosts(): Promise<Post[]> {
@@ -258,7 +255,7 @@ export class DatabaseService {
       ORDER BY pub_date ASC
     `).all();
     
-    return result.results as Post[];
+    return result.results as unknown as Post[];
   }
 
   // 关键词订阅相关操作
@@ -275,17 +272,17 @@ export class DatabaseService {
       sub.category || null
     ).first();
 
-    return result as KeywordSub;
+    return result as unknown as KeywordSub;
   }
 
   async getAllKeywordSubs(): Promise<KeywordSub[]> {
     const result = await this.db.prepare('SELECT * FROM keywords_sub ORDER BY created_at DESC').all();
-    return result.results as KeywordSub[];
+    return result.results as unknown as KeywordSub[];
   }
 
   async deleteKeywordSub(id: number): Promise<boolean> {
     const result = await this.db.prepare('DELETE FROM keywords_sub WHERE id = ?').bind(id).run();
-    return result.changes > 0;
+    return result.meta.changes > 0;
   }
 
   async updateKeywordSub(id: number, sub: Partial<Omit<KeywordSub, 'id' | 'created_at' | 'updated_at'>>): Promise<KeywordSub | null> {

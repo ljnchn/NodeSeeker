@@ -30,7 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_posts_post_id ON posts(post_id);
 -- keywords_sub 表
 CREATE TABLE IF NOT EXISTS keywords_sub (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  keyword1 TEXT NOT NULL COMMENT '关键词1',
+  keyword1 TEXT DEFAULT NULL COMMENT '关键词1',
   keyword2 TEXT DEFAULT NULL COMMENT '关键词2',
   keyword3 TEXT DEFAULT NULL COMMENT '关键词3',
   creator TEXT NULL COMMENT '创建者',

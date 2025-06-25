@@ -11,7 +11,7 @@ export default defineConfig({
       fileName: 'index'
     },
     rollupOptions: {
-      external: ['hono', 'hono/html', 'hono/cors', 'hono/jsx-renderer']
+      // external: ['hono', 'hono/html', 'hono/cors', 'hono/jsx-renderer']
     },
     target: 'esnext',
     ssr: true,

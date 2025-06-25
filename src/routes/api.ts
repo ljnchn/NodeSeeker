@@ -295,11 +295,11 @@ apiRoutes.post('/subscriptions', async (c) => {
     
     const dbService = c.get('dbService')
     const subscription = await dbService.createKeywordSub({
-      keyword1: keyword1 && keyword1.trim() ? keyword1.trim() : undefined,
-      keyword2: keyword2 && keyword2.trim() ? keyword2.trim() : undefined,
-      keyword3: keyword3 && keyword3.trim() ? keyword3.trim() : undefined,
-      creator: creator && creator.trim() ? creator.trim() : undefined,
-      category: category && category.trim() ? category.trim() : undefined
+      keyword1: keyword1 && keyword1.trim() ? keyword1.trim() : null,
+      keyword2: keyword2 && keyword2.trim() ? keyword2.trim() : null,
+      keyword3: keyword3 && keyword3.trim() ? keyword3.trim() : null,
+      creator: creator && creator.trim() ? creator.trim() : null,
+      category: category && category.trim() ? category.trim() : null
     })
     
     return c.json({

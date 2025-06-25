@@ -171,6 +171,76 @@ telegramRoutes.get('/webhook-info', async (c) => {
   }
 })
 
+// 获取 Bot 状态信息
+telegramRoutes.get('/bot-status', async (c) => {
+  try {
+    const dbService = c.get('dbService')
+    const config = await dbService.getBaseConfig()
+    
+    if (!config || !config.bot_token) {
+      return c.json({
+        success: false,
+        message: 'Bot Token 未配置',
+        data: {
+          configured: false,
+          connected: false,
+          bound: false
+        }
+      }, 400)
+    }
+    
+    const telegramService = new TelegramService(dbService, config.bot_token)
+    
+    // 获取 Bot 信息检测连接状态
+    const botInfo = await telegramService.getBotInfo()
+    
+    // 获取 Webhook 信息
+    const webhookResponse = await fetch(`https://api.telegram.org/bot${config.bot_token}/getWebhookInfo`)
+    const webhookInfo = await webhookResponse.json() as any
+    
+    const statusData = {
+      configured: true,
+      connected: !!botInfo,
+      bound: !!config.chat_id,
+      bot_info: botInfo || null,
+      webhook_info: webhookInfo?.result || null,
+      config: {
+        has_bot_token: !!config.bot_token,
+        has_chat_id: !!config.chat_id,
+        bound_user_name: config.bound_user_name || null,
+        bound_user_username: config.bound_user_username || null,
+        stop_push: config.stop_push === 1,
+        last_check_time: new Date().toISOString()
+      }
+    }
+    
+    if (!botInfo) {
+      return c.json({
+        success: false,
+        message: 'Bot Token 无效或网络连接失败',
+        data: statusData
+      }, 400)
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Bot 状态检测成功',
+      data: statusData
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `Bot 状态检测失败: ${error}`,
+      data: {
+        configured: false,
+        connected: false,
+        bound: false,
+        error: String(error)
+      }
+    }, 500)
+  }
+})
+
 // 删除 Webhook
 telegramRoutes.delete('/webhook', async (c) => {
   try {
@@ -198,6 +268,199 @@ telegramRoutes.delete('/webhook', async (c) => {
     return c.json({
       success: false,
       message: `删除 Webhook 失败: ${error}`
+    }, 500)
+  }
+})
+
+// Bot 健康检查接口
+telegramRoutes.get('/health-check', async (c) => {
+  try {
+    const dbService = c.get('dbService')
+    const config = await dbService.getBaseConfig()
+    
+    const healthStatus = {
+      timestamp: new Date().toISOString(),
+      overall_status: 'unknown',
+      checks: {
+        config_check: {
+          status: 'fail',
+          message: '',
+          details: {}
+        },
+        connection_check: {
+          status: 'fail', 
+          message: '',
+          details: {}
+        },
+        webhook_check: {
+          status: 'fail',
+          message: '',
+          details: {}
+        },
+        binding_check: {
+          status: 'fail',
+          message: '',
+          details: {}
+        }
+      }
+    }
+    
+    // 1. 配置检查
+    if (!config || !config.bot_token) {
+      healthStatus.checks.config_check = {
+        status: 'fail',
+        message: 'Bot Token 未配置',
+        details: {
+          has_config: !!config,
+          has_bot_token: false
+        }
+      }
+    } else {
+      healthStatus.checks.config_check = {
+        status: 'pass',
+        message: '配置正常',
+        details: {
+          has_config: true,
+          has_bot_token: true,
+          has_chat_id: !!config.chat_id
+        }
+      }
+    }
+    
+    // 如果配置不正确，直接返回
+    if (healthStatus.checks.config_check.status === 'fail') {
+      healthStatus.overall_status = 'fail'
+      return c.json({
+        success: false,
+        message: '系统配置不完整',
+        data: healthStatus
+      }, 400)
+    }
+    
+         const telegramService = new TelegramService(dbService, config!.bot_token!)
+     
+     // 2. 连接检查
+    try {
+      const botInfo = await telegramService.getBotInfo()
+      if (botInfo) {
+        healthStatus.checks.connection_check = {
+          status: 'pass',
+          message: 'Bot 连接正常',
+          details: {
+            bot_id: botInfo.id,
+            bot_username: botInfo.username,
+            bot_name: botInfo.first_name,
+            is_bot: botInfo.is_bot
+          }
+        }
+      } else {
+        healthStatus.checks.connection_check = {
+          status: 'fail',
+          message: 'Bot 连接失败',
+          details: {}
+        }
+      }
+    } catch (error) {
+      healthStatus.checks.connection_check = {
+        status: 'fail',
+        message: `Bot 连接异常: ${error}`,
+        details: { error: String(error) }
+      }
+    }
+    
+         // 3. Webhook 检查
+     try {
+       const webhookResponse = await fetch(`https://api.telegram.org/bot${config!.bot_token}/getWebhookInfo`)
+       const webhookResult = await webhookResponse.json() as any
+      
+      if (webhookResult.ok) {
+        const webhookInfo = webhookResult.result
+        healthStatus.checks.webhook_check = {
+          status: webhookInfo.url ? 'pass' : 'warn',
+          message: webhookInfo.url ? 'Webhook 已设置' : 'Webhook 未设置',
+          details: {
+            url: webhookInfo.url || null,
+            has_custom_certificate: webhookInfo.has_custom_certificate || false,
+            pending_update_count: webhookInfo.pending_update_count || 0,
+            last_error_date: webhookInfo.last_error_date || null,
+            last_error_message: webhookInfo.last_error_message || null,
+            max_connections: webhookInfo.max_connections || null
+          }
+        }
+      } else {
+        healthStatus.checks.webhook_check = {
+          status: 'fail',
+          message: 'Webhook 信息获取失败',
+          details: { error: webhookResult.description }
+        }
+      }
+    } catch (error) {
+      healthStatus.checks.webhook_check = {
+        status: 'fail',
+        message: `Webhook 检查异常: ${error}`,
+        details: { error: String(error) }
+      }
+    }
+    
+         // 4. 绑定检查
+     if (config!.chat_id) {
+       // 尝试发送测试消息来验证绑定状态
+       const testResult = await telegramService.sendMessage(
+         config!.chat_id, 
+         '🔍 **系统健康检查**\n\n✅ Bot 运行正常，绑定状态良好'
+       )
+       
+       healthStatus.checks.binding_check = {
+         status: testResult ? 'pass' : 'fail',
+         message: testResult ? '用户绑定正常，消息发送成功' : '绑定存在问题，消息发送失败',
+         details: {
+           chat_id: config!.chat_id,
+           bound_user_name: config!.bound_user_name || null,
+           bound_user_username: config!.bound_user_username || null,
+           stop_push: config!.stop_push === 1,
+           message_sent: testResult
+         }
+       }
+    } else {
+      healthStatus.checks.binding_check = {
+        status: 'warn',
+        message: '用户未绑定',
+        details: {
+          chat_id: null,
+          bound_user_name: null,
+          bound_user_username: null
+        }
+      }
+    }
+    
+    // 计算整体状态
+    const allChecks = Object.values(healthStatus.checks)
+    const failedChecks = allChecks.filter(check => check.status === 'fail')
+    const warnChecks = allChecks.filter(check => check.status === 'warn')
+    
+    if (failedChecks.length === 0) {
+      healthStatus.overall_status = warnChecks.length === 0 ? 'healthy' : 'warning'
+    } else {
+      healthStatus.overall_status = 'unhealthy'
+    }
+    
+    const httpStatus = healthStatus.overall_status === 'unhealthy' ? 500 : 200
+    
+    return c.json({
+      success: healthStatus.overall_status !== 'unhealthy',
+      message: `Bot 健康检查完成 - 状态: ${healthStatus.overall_status}`,
+      data: healthStatus
+    }, httpStatus)
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `健康检查失败: ${error}`,
+      data: {
+        timestamp: new Date().toISOString(),
+        overall_status: 'error',
+        error: String(error)
+      }
     }, 500)
   }
 })

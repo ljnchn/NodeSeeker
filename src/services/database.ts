@@ -341,4 +341,110 @@ export class DatabaseService {
       return false;
     }
   }
+
+  // 统计查询方法（使用 COUNT 提高效率）
+  async getPostsCount(): Promise<number> {
+    const result = await this.db.prepare('SELECT COUNT(*) as count FROM posts').first();
+    return (result as any)?.count || 0;
+  }
+
+  async getPostsCountByStatus(pushStatus: number): Promise<number> {
+    const result = await this.db.prepare('SELECT COUNT(*) as count FROM posts WHERE push_status = ?')
+      .bind(pushStatus).first();
+    return (result as any)?.count || 0;
+  }
+
+  async getSubscriptionsCount(): Promise<number> {
+    const result = await this.db.prepare('SELECT COUNT(*) as count FROM keywords_sub').first();
+    return (result as any)?.count || 0;
+  }
+
+  async getTodayPostsCount(): Promise<number> {
+    const result = await this.db.prepare(`
+      SELECT COUNT(*) as count FROM posts 
+      WHERE DATE(created_at) = DATE('now')
+    `).first();
+    return (result as any)?.count || 0;
+  }
+
+  async getTodayMessagesCount(): Promise<number> {
+    const result = await this.db.prepare(`
+      SELECT COUNT(*) as count FROM posts 
+      WHERE push_status = 1 AND DATE(push_date) = DATE('now')
+    `).first();
+    return (result as any)?.count || 0;
+  }
+
+  async getPostsCountByDateRange(startDate: string, endDate: string): Promise<number> {
+    const result = await this.db.prepare(`
+      SELECT COUNT(*) as count FROM posts 
+      WHERE DATE(pub_date) BETWEEN ? AND ?
+    `).bind(startDate, endDate).first();
+    return (result as any)?.count || 0;
+  }
+
+  async getLastUpdateTime(): Promise<string | null> {
+    const result = await this.db.prepare(`
+      SELECT MAX(created_at) as last_update FROM posts
+    `).first();
+    return (result as any)?.last_update || null;
+  }
+
+  // 获取综合统计信息
+  async getComprehensiveStats(): Promise<{
+    total_posts: number;
+    unpushed_posts: number;
+    pushed_posts: number;
+    skipped_posts: number;
+    total_subscriptions: number;
+    today_posts: number;
+    today_messages: number;
+    last_update: string | null;
+  }> {
+    try {
+      const [
+        totalPosts,
+        unpushedPosts,
+        pushedPosts,
+        skippedPosts,
+        totalSubscriptions,
+        todayPosts,
+        todayMessages,
+        lastUpdate
+      ] = await Promise.all([
+        this.getPostsCount(),
+        this.getPostsCountByStatus(0), // 未推送
+        this.getPostsCountByStatus(1), // 已推送
+        this.getPostsCountByStatus(2), // 无需推送
+        this.getSubscriptionsCount(),
+        this.getTodayPostsCount(),
+        this.getTodayMessagesCount(),
+        this.getLastUpdateTime()
+      ]);
+
+      return {
+        total_posts: totalPosts,
+        unpushed_posts: unpushedPosts,
+        pushed_posts: pushedPosts,
+        skipped_posts: skippedPosts,
+        total_subscriptions: totalSubscriptions,
+        today_posts: todayPosts,
+        today_messages: todayMessages,
+        last_update: lastUpdate
+      };
+    } catch (error) {
+      console.error('获取综合统计信息失败:', error);
+      return {
+        total_posts: 0,
+        unpushed_posts: 0,
+        pushed_posts: 0,
+        skipped_posts: 0,
+        total_subscriptions: 0,
+        today_posts: 0,
+        today_messages: 0,
+        last_update: null
+      };
+    }
+  }
+
 }

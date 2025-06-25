@@ -303,21 +303,21 @@ export class MatcherService {
     totalSubscriptions: number;
   }> {
     try {
-      const [recentPosts, unpushedPosts, subscriptions] = await Promise.all([
-        this.dbService.getRecentPosts(1000), // 获取最近1000篇文章用于统计
-        this.dbService.getUnpushedPosts(),
-        this.dbService.getAllKeywordSubs()
+      // 使用高效的 COUNT 查询代替获取大量数据
+      const [totalPosts, unpushedPosts, pushedPosts, skippedPosts, totalSubscriptions] = await Promise.all([
+        this.dbService.getPostsCount(),
+        this.dbService.getPostsCountByStatus(0), // 未推送
+        this.dbService.getPostsCountByStatus(1), // 已推送
+        this.dbService.getPostsCountByStatus(2), // 无需推送
+        this.dbService.getSubscriptionsCount()
       ]);
 
-      const pushedPosts = recentPosts.filter(p => p.push_status === 1).length;
-      const skippedPosts = recentPosts.filter(p => p.push_status === 2).length;
-
       return {
-        totalPosts: recentPosts.length,
-        unpushedPosts: unpushedPosts.length,
+        totalPosts,
+        unpushedPosts,
         pushedPosts,
         skippedPosts,
-        totalSubscriptions: subscriptions.length
+        totalSubscriptions
       };
     } catch (error) {
       console.error('获取匹配统计失败:', error);

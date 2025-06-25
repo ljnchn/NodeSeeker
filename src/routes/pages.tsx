@@ -22,12 +22,12 @@ pageRoutes.get('/', async (c) => {
     const initStatus = await authService.checkInitialization()
     
     if (initStatus.initialized) {
-      return c.html(LoginPage())
+      return c.render(<LoginPage />)
     } else {
-      return c.html(InitPage())
+      return c.render(<InitPage />)
     }
   } catch (error) {
-    return c.html(ErrorPage(`加载页面失败: ${error}`))
+    return c.render(<ErrorPage message={`加载页面失败: ${error}`} />)
   }
 })
 
@@ -41,18 +41,18 @@ pageRoutes.get('/init', async (c) => {
       return c.redirect('/')
     }
     
-    return c.html(InitPage())
+    return c.render(<InitPage />)
   } catch (error) {
-    return c.html(ErrorPage(`加载初始化页面失败: ${error}`))
+    return c.render(<ErrorPage message={`加载初始化页面失败: ${error}`} />)
   }
 })
 
 // 登录页面
 pageRoutes.get('/login', async (c) => {
-  return c.html(LoginPage())
+  return c.render(<LoginPage />)
 })
 
 // 主页面
 pageRoutes.get('/dashboard', async (c) => {
-  return c.html(DashboardPage())
+  return c.render(<DashboardPage />)
 }) 

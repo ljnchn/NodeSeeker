@@ -131,7 +131,7 @@ apiRoutes.post('/telegram/webhook', async (c) => {
     
     const result = await telegramService.setWebhook(webhook_url)
     
-    if (result.ok) {
+    if (result) {
       return c.json({
         success: true,
         message: 'Webhook设置成功',
@@ -140,7 +140,7 @@ apiRoutes.post('/telegram/webhook', async (c) => {
     } else {
       return c.json({
         success: false,
-        message: `Webhook设置失败: ${result.description}`,
+        message: `Webhook设置失败: ${result}`,
         data: result
       }, 400)
     }
@@ -169,8 +169,8 @@ apiRoutes.get('/telegram/bot-info', async (c) => {
     const result = await telegramService.getBotInfo()
     
     return c.json({
-      success: result.ok,
-      message: result.ok ? '获取Bot信息成功' : `获取Bot信息失败: ${result.description}`,
+      success: true,
+      message: '获取Bot信息成功',
       data: result
     })
   } catch (error) {
@@ -346,7 +346,7 @@ apiRoutes.post('/rss/update', async (c) => {
   }
 })
 
-// 获取匹配统计
+// 获取匹配统计（兼容旧接口）
 apiRoutes.get('/stats', async (c) => {
   try {
     const dbService = c.get('dbService')
@@ -372,6 +372,62 @@ apiRoutes.get('/stats', async (c) => {
     return c.json({
       success: false,
       message: `获取统计信息失败: ${error}`
+    }, 500)
+  }
+})
+
+// 获取综合统计信息（新接口，更高效）
+apiRoutes.get('/stats/comprehensive', async (c) => {
+  try {
+    const dbService = c.get('dbService')
+    const stats = await dbService.getComprehensiveStats()
+    
+    // 计算运行时间（天数）
+    const startTime = new Date('2024-01-01') // 可以设置为系统实际启动时间
+    const uptime = Math.floor((Date.now() - startTime.getTime()) / (1000 * 60 * 60 * 24))
+    
+    // 格式化最后更新时间
+    const lastUpdate = stats.last_update 
+      ? new Date(stats.last_update).toLocaleString('zh-CN')
+      : '从未'
+    
+    return c.json({
+      success: true,
+      data: {
+        ...stats,
+        uptime: `${uptime}天`,
+        last_update: lastUpdate
+      }
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `获取综合统计信息失败: ${error}`
+    }, 500)
+  }
+})
+
+// 获取今日统计
+apiRoutes.get('/stats/today', async (c) => {
+  try {
+    const dbService = c.get('dbService')
+    
+    const [todayPosts, todayMessages] = await Promise.all([
+      dbService.getTodayPostsCount(),
+      dbService.getTodayMessagesCount()
+    ])
+    
+    return c.json({
+      success: true,
+      data: {
+        posts: todayPosts,
+        messages: todayMessages
+      }
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `获取今日统计失败: ${error}`
     }, 500)
   }
 })

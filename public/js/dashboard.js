@@ -2,6 +2,8 @@
 
 let authToken = '';
 let currentConfig = {};
+let botInfo = null;
+let userInfo = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     // 检查认证状态
@@ -12,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 加载初始数据
     loadInitialData();
+    
+    // 定期更新状态
+    setInterval(updateStatus, 30000); // 每30秒更新一次状态
 });
 
 // 检查认证状态
@@ -39,10 +44,34 @@ async function checkAuth() {
             window.location.href = '/login';
             return;
         }
+        
+        // 更新用户信息
+        if (result.user) {
+            userInfo = result.user;
+            updateUserInfo();
+        }
     } catch (error) {
         console.error('认证验证失败:', error);
         localStorage.removeItem('auth_token');
         window.location.href = '/login';
+    }
+}
+
+// 更新用户信息显示
+function updateUserInfo() {
+    const userInfoElement = document.getElementById('userInfo');
+    if (userInfoElement && userInfo) {
+        const userNameElement = userInfoElement.querySelector('.user-name');
+        const userStatusElement = userInfoElement.querySelector('.user-status');
+        
+        if (userNameElement) {
+            userNameElement.textContent = userInfo.name || '管理员';
+        }
+        
+        if (userStatusElement) {
+            userStatusElement.textContent = '在线';
+            userStatusElement.className = 'user-status online';
+        }
     }
 }
 
@@ -113,6 +142,94 @@ function switchTab(tabName) {
 // 加载初始数据
 async function loadInitialData() {
     await loadConfig();
+    await loadBotInfo();
+    await updateStatus();
+}
+
+// 加载 Bot 信息
+async function loadBotInfo() {
+    try {
+        const response = await apiRequest('/telegram/info', 'GET');
+        
+        if (response.success) {
+            botInfo = response.data;
+            updateBotStatus();
+        }
+    } catch (error) {
+        console.error('加载 Bot 信息失败:', error);
+        updateBotStatus(false);
+    }
+}
+
+// 更新 Bot 状态显示
+function updateBotStatus(isOnline = true) {
+    const botStatusElement = document.getElementById('botStatus');
+    const botDetailElement = document.getElementById('botDetail');
+    const botStatusCard = document.getElementById('botStatusCard');
+    
+    if (botStatusElement && botDetailElement) {
+        if (isOnline && botInfo) {
+            botStatusElement.textContent = '在线';
+            botStatusElement.style.color = '#10b981';
+            botDetailElement.textContent = `@${botInfo.username || 'Unknown'}`;
+            botStatusCard.style.borderLeft = '4px solid #10b981';
+        } else {
+            botStatusElement.textContent = '离线';
+            botStatusElement.style.color = '#ef4444';
+            botDetailElement.textContent = '请检查 Bot Token 配置';
+            botStatusCard.style.borderLeft = '4px solid #ef4444';
+        }
+    }
+}
+
+// 更新绑定用户信息
+function updateBoundUserInfo() {
+    const boundUserElement = document.getElementById('boundUser');
+    const userDetailElement = document.getElementById('userDetail');
+    const userStatusCard = document.getElementById('userStatusCard');
+    
+    if (boundUserElement && userDetailElement) {
+        if (currentConfig.chat_id) {
+            boundUserElement.textContent = '已绑定';
+            boundUserElement.style.color = '#10b981';
+            userDetailElement.textContent = `Chat ID: ${currentConfig.chat_id}`;
+            userStatusCard.style.borderLeft = '4px solid #10b981';
+        } else {
+            boundUserElement.textContent = '未绑定';
+            boundUserElement.style.color = '#f59e0b';
+            userDetailElement.textContent = '请发送 /start 给 Bot 进行绑定';
+            userStatusCard.style.borderLeft = '4px solid #f59e0b';
+        }
+    }
+}
+
+// 更新状态信息
+async function updateStatus() {
+    try {
+        // 更新订阅数量
+        const subscriptionsResponse = await apiRequest('/api/subscriptions', 'GET');
+        if (subscriptionsResponse.success) {
+            const activeSubscriptions = document.getElementById('activeSubscriptions');
+            if (activeSubscriptions) {
+                activeSubscriptions.textContent = subscriptionsResponse.data.length;
+            }
+        }
+        
+        // 更新今日推送数量
+        const statsResponse = await apiRequest('/api/stats/today', 'GET');
+        if (statsResponse.success) {
+            const todayMessages = document.getElementById('todayMessages');
+            if (todayMessages) {
+                todayMessages.textContent = statsResponse.data.messages || 0;
+            }
+        }
+        
+        // 更新绑定用户信息
+        updateBoundUserInfo();
+        
+    } catch (error) {
+        console.error('更新状态失败:', error);
+    }
 }
 
 // 加载配置
@@ -123,6 +240,7 @@ async function loadConfig() {
         if (response.success) {
             currentConfig = response.data;
             populateConfigForm(response.data);
+            updateBoundUserInfo();
         } else {
             showMessage(response.message || '加载配置失败', 'error');
         }
@@ -158,6 +276,9 @@ async function handleConfigSubmit(e) {
         if (response.success) {
             currentConfig = response.data;
             showMessage('配置保存成功', 'success');
+            // 重新加载 Bot 信息
+            await loadBotInfo();
+            await updateStatus();
         } else {
             showMessage(response.message || '保存配置失败', 'error');
         }
@@ -175,8 +296,8 @@ async function testBotConnection() {
     }
 
     const btn = document.getElementById('testBotBtn');
-    const originalText = btn.textContent;
-    btn.textContent = '测试中...';
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-icon">⏳</span>测试中...';
     btn.disabled = true;
 
     try {
@@ -184,14 +305,18 @@ async function testBotConnection() {
         
         if (response.success) {
             showMessage('Bot 连接测试成功', 'success');
+            botInfo = response.data;
+            updateBotStatus(true);
         } else {
             showMessage(response.message || 'Bot 连接测试失败', 'error');
+            updateBotStatus(false);
         }
     } catch (error) {
         console.error('测试 Bot 连接失败:', error);
         showMessage('测试 Bot 连接失败', 'error');
+        updateBotStatus(false);
     } finally {
-        btn.textContent = originalText;
+        btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
@@ -203,21 +328,16 @@ async function setWebhook() {
         return;
     }
 
-    const webhookUrl = `${window.location.origin}/telegram/webhook`;
-    
     const btn = document.getElementById('setWebhookBtn');
-    const originalText = btn.textContent;
-    btn.textContent = '设置中...';
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-icon">⏳</span>设置中...';
     btn.disabled = true;
 
     try {
-        const response = await apiRequest('/api/telegram/webhook', 'POST', {
-            bot_token: currentConfig.bot_token,
-            webhook_url: webhookUrl
-        });
+        const response = await apiRequest('/telegram/webhook', 'POST');
         
         if (response.success) {
-            showMessage(`Webhook 设置成功: ${webhookUrl}`, 'success');
+            showMessage('Webhook 设置成功', 'success');
         } else {
             showMessage(response.message || 'Webhook 设置失败', 'error');
         }
@@ -225,7 +345,7 @@ async function setWebhook() {
         console.error('设置 Webhook 失败:', error);
         showMessage('设置 Webhook 失败', 'error');
     } finally {
-        btn.textContent = originalText;
+        btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
@@ -235,44 +355,41 @@ async function apiRequest(url, method = 'GET', data = null) {
     const options = {
         method,
         headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
         }
     };
 
-    if (data && method !== 'GET') {
+    if (data) {
         options.body = JSON.stringify(data);
     }
 
     const response = await fetch(url, options);
     
-    if (response.status === 401) {
-        // Token 过期，重新登录
-        localStorage.removeItem('auth_token');
-        window.location.href = '/login';
-        return;
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
     }
-
+    
     return await response.json();
 }
 
 // 显示消息
 function showMessage(text, type = 'info') {
-    const messageDiv = document.getElementById('message');
-    messageDiv.textContent = text;
-    messageDiv.className = `message ${type}`;
-    messageDiv.style.display = 'block';
-
+    const messageEl = document.getElementById('message');
+    messageEl.textContent = text;
+    messageEl.className = `message ${type}`;
+    messageEl.style.display = 'block';
+    
     setTimeout(() => {
-        messageDiv.style.display = 'none';
-    }, 3000);
+        messageEl.style.display = 'none';
+    }, 5000);
 }
 
 // 加载订阅列表
 async function loadSubscriptions() {
     try {
         const response = await apiRequest('/api/subscriptions', 'GET');
-
+        
         if (response.success) {
             renderSubscriptions(response.data);
         } else {
@@ -287,36 +404,41 @@ async function loadSubscriptions() {
 // 渲染订阅列表
 function renderSubscriptions(subscriptions) {
     const container = document.getElementById('subscriptionsList');
-
+    
     if (subscriptions.length === 0) {
-        container.innerHTML = '<p>暂无订阅</p>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>🔍 还没有订阅</h3>
+                <p>添加您的第一个关键词订阅来开始监控</p>
+            </div>
+        `;
         return;
     }
-
-    const html = subscriptions.map(sub => `
+    
+    container.innerHTML = subscriptions.map(sub => `
         <div class="subscription-item">
             <h4>订阅 #${sub.id}</h4>
             <div class="keywords">
-                关键词: ${sub.keyword1}${sub.keyword2 ? ' + ' + sub.keyword2 : ''}${sub.keyword3 ? ' + ' + sub.keyword3 : ''}
+                ${[sub.keyword1, sub.keyword2, sub.keyword3].filter(k => k).join(' + ')}
             </div>
             <div class="filters">
-                ${sub.creator ? `创建者: ${sub.creator} | ` : ''}
-                ${sub.category ? `分类: ${sub.category} | ` : ''}
-                创建时间: ${new Date(sub.created_at).toLocaleString('zh-CN')}
+                ${sub.creator ? `创建者: ${sub.creator}` : ''}
+                ${sub.category ? `分类: ${sub.category}` : ''}
             </div>
             <div class="actions">
-                <button class="btn btn-danger" onclick="deleteSubscription(${sub.id})">删除</button>
+                <button class="btn btn-danger" onclick="deleteSubscription(${sub.id})">
+                    <span class="btn-icon">🗑️</span>
+                    删除
+                </button>
             </div>
         </div>
     `).join('');
-
-    container.innerHTML = html;
 }
 
 // 处理添加订阅
 async function handleAddSubscription(e) {
     e.preventDefault();
-
+    
     const formData = new FormData(e.target);
     const data = {
         keyword1: formData.get('keyword1'),
@@ -326,18 +448,14 @@ async function handleAddSubscription(e) {
         category: formData.get('category')
     };
 
-    if (!data.keyword1 || data.keyword1.trim().length === 0) {
-        showMessage('请至少输入一个关键词', 'error');
-        return;
-    }
-
     try {
         const response = await apiRequest('/api/subscriptions', 'POST', data);
-
+        
         if (response.success) {
             showMessage('订阅添加成功', 'success');
-            e.target.reset(); // 清空表单
-            loadSubscriptions(); // 重新加载列表
+            e.target.reset();
+            loadSubscriptions();
+            updateStatus(); // 更新状态
         } else {
             showMessage(response.message || '添加订阅失败', 'error');
         }
@@ -355,10 +473,11 @@ async function deleteSubscription(id) {
 
     try {
         const response = await apiRequest(`/api/subscriptions/${id}`, 'DELETE');
-
+        
         if (response.success) {
             showMessage('订阅删除成功', 'success');
-            loadSubscriptions(); // 重新加载列表
+            loadSubscriptions();
+            updateStatus(); // 更新状态
         } else {
             showMessage(response.message || '删除订阅失败', 'error');
         }
@@ -371,8 +490,8 @@ async function deleteSubscription(id) {
 // 加载文章列表
 async function loadPosts() {
     try {
-        const response = await apiRequest('/api/posts?limit=20', 'GET');
-
+        const response = await apiRequest('/api/posts', 'GET');
+        
         if (response.success) {
             renderPosts(response.data);
         } else {
@@ -387,52 +506,55 @@ async function loadPosts() {
 // 渲染文章列表
 function renderPosts(posts) {
     const container = document.getElementById('postsList');
-
+    
     if (posts.length === 0) {
-        container.innerHTML = '<p>暂无文章</p>';
-        return;
-    }
-
-    const html = posts.map(post => {
-        const statusText = post.push_status === 0 ? '⏳ 未推送' :
-                          post.push_status === 1 ? '✅ 已推送' : '❌ 无需推送';
-        const statusClass = post.push_status === 0 ? 'warning' :
-                           post.push_status === 1 ? 'success' : 'secondary';
-
-        return `
-            <div class="post-item">
-                <h4>${post.title}</h4>
-                <div class="meta">
-                    作者: ${post.creator} | 分类: ${post.category} |
-                    发布时间: ${new Date(post.pub_date).toLocaleString('zh-CN')} |
-                    <span class="status ${statusClass}">${statusText}</span>
-                </div>
-                <div class="content">
-                    ${post.memo.substring(0, 200)}${post.memo.length > 200 ? '...' : ''}
-                </div>
-                <div class="actions">
-                    <a href="https://www.nodeseek.com/post-${post.post_id}-1" target="_blank" class="btn btn-secondary">查看原文</a>
-                </div>
+        container.innerHTML = `
+            <div class="empty-state">
+                <h3>📰 暂无文章</h3>
+                <p>还没有检测到匹配的文章</p>
             </div>
         `;
-    }).join('');
-
-    container.innerHTML = html;
+        return;
+    }
+    
+    container.innerHTML = posts.map(post => `
+        <div class="post-item">
+            <h4>
+                <a href="${post.link}" target="_blank" rel="noopener noreferrer">
+                    ${post.title}
+                </a>
+            </h4>
+            <div class="meta">
+                <span>📅 ${new Date(post.pub_date).toLocaleString()}</span>
+                ${post.creator ? `<span>👤 ${post.creator}</span>` : ''}
+                ${post.category ? `<span>📂 ${post.category}</span>` : ''}
+            </div>
+            <div class="content">
+                ${post.description || ''}
+            </div>
+            <div class="actions">
+                <a href="${post.link}" target="_blank" class="btn btn-primary">
+                    <span class="btn-icon">🔗</span>
+                    查看原文
+                </a>
+            </div>
+        </div>
+    `).join('');
 }
 
-// 手动更新 RSS
+// 更新 RSS
 async function updateRSS() {
     const btn = document.getElementById('updateRssBtn');
-    const originalText = btn.textContent;
-    btn.textContent = '更新中...';
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-icon">⏳</span>更新中...';
     btn.disabled = true;
 
     try {
         const response = await apiRequest('/api/rss/update', 'POST');
-
+        
         if (response.success) {
-            showMessage(`RSS 更新成功: 新增 ${response.data.new} 篇文章`, 'success');
-            loadPosts(); // 重新加载文章列表
+            showMessage('RSS 更新成功', 'success');
+            loadPosts();
         } else {
             showMessage(response.message || 'RSS 更新失败', 'error');
         }
@@ -440,53 +562,55 @@ async function updateRSS() {
         console.error('RSS 更新失败:', error);
         showMessage('RSS 更新失败', 'error');
     } finally {
-        btn.textContent = originalText;
+        btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
 
-// 加载统计信息
+// 加载统计信息（使用新的高效接口）
 async function loadStats() {
     try {
-        const response = await apiRequest('/api/stats', 'GET');
-
+        const response = await apiRequest('/api/stats/comprehensive', 'GET');
+        
         if (response.success) {
             renderStats(response.data);
         } else {
-            showMessage(response.message || '加载统计信息失败', 'error');
+            showMessage(response.message || '加载统计失败', 'error');
         }
     } catch (error) {
-        console.error('加载统计信息失败:', error);
-        showMessage('加载统计信息失败', 'error');
+        console.error('加载统计失败:', error);
+        showMessage('加载统计失败', 'error');
     }
 }
 
 // 渲染统计信息
 function renderStats(stats) {
     const container = document.getElementById('statsContent');
-
-    const html = `
+    
+    container.innerHTML = `
+        <div class="stat-card">
+            <h3>总订阅数</h3>
+            <div class="number">${stats.total_subscriptions || 0}</div>
+        </div>
         <div class="stat-card">
             <h3>总文章数</h3>
-            <div class="number">${stats.totalPosts}</div>
+            <div class="number">${stats.total_posts || 0}</div>
         </div>
         <div class="stat-card">
-            <h3>未推送</h3>
-            <div class="number">${stats.unpushedPosts}</div>
+            <h3>今日新增</h3>
+            <div class="number">${stats.today_posts || 0}</div>
         </div>
         <div class="stat-card">
-            <h3>已推送</h3>
-            <div class="number">${stats.pushedPosts}</div>
+            <h3>推送消息</h3>
+            <div class="number">${stats.total_messages || 0}</div>
         </div>
         <div class="stat-card">
-            <h3>无需推送</h3>
-            <div class="number">${stats.skippedPosts}</div>
+            <h3>系统运行</h3>
+            <div class="number">${stats.uptime || '0天'}</div>
         </div>
         <div class="stat-card">
-            <h3>订阅数量</h3>
-            <div class="number">${stats.totalSubscriptions}</div>
+            <h3>最后更新</h3>
+            <div class="number" style="font-size: 16px;">${stats.last_update || '从未'}</div>
         </div>
     `;
-
-    container.innerHTML = html;
 }

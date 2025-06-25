@@ -8,7 +8,7 @@ export function ErrorPage(message: string) {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>错误 - NodeSeek RSS 监控</title>
-        <link href="/css/style.css" rel="stylesheet" />
+        <link href="/client/css/style.css" rel="stylesheet" />
       </head>
       <body>
         <div class="container">

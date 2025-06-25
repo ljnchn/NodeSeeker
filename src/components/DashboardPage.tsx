@@ -8,7 +8,7 @@ export function DashboardPage() {
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>NodeSeek RSS 监控 - 控制台</title>
-        <link href="/css/style.css" rel="stylesheet" />
+        <link href="/client/css/style.css" rel="stylesheet" />
       </head>
       <body>
         <div class="dashboard">
@@ -137,7 +137,7 @@ export function DashboardPage() {
         
         <div id="message" class="message"></div>
         
-        <script src="/js/dashboard.js"></script>
+        <script src="/client/js/dashboard.js"></script>
       </body>
     </html>
   `

@@ -4,6 +4,8 @@ export interface BaseConfig {
   password: string;
   bot_token?: string;
   chat_id: string;
+  bound_user_name?: string;
+  bound_user_username?: string;
   stop_push: number;
   only_title: number;
   created_at?: string;
@@ -86,6 +88,8 @@ export class DatabaseService {
           password TEXT NOT NULL,
           bot_token TEXT DEFAULT NULL,
           chat_id TEXT NOT NULL,
+          bound_user_name TEXT DEFAULT NULL,
+          bound_user_username TEXT DEFAULT NULL,
           stop_push INTEGER DEFAULT 0,
           only_title INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -144,14 +148,16 @@ export class DatabaseService {
 
   async createBaseConfig(config: Omit<BaseConfig, 'id' | 'created_at' | 'updated_at'>): Promise<BaseConfig> {
     const result = await this.db.prepare(`
-      INSERT INTO base_config (username, password, bot_token, chat_id, stop_push, only_title)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO base_config (username, password, bot_token, chat_id, bound_user_name, bound_user_username, stop_push, only_title)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       RETURNING *
     `).bind(
       config.username,
       config.password,
       config.bot_token || null,
       config.chat_id,
+      config.bound_user_name || null,
+      config.bound_user_username || null,
       config.stop_push,
       config.only_title
     ).first();
@@ -178,6 +184,14 @@ export class DatabaseService {
     if (config.chat_id !== undefined) {
       updates.push('chat_id = ?');
       values.push(config.chat_id);
+    }
+    if (config.bound_user_name !== undefined) {
+      updates.push('bound_user_name = ?');
+      values.push(config.bound_user_name);
+    }
+    if (config.bound_user_username !== undefined) {
+      updates.push('bound_user_username = ?');
+      values.push(config.bound_user_username);
     }
     if (config.stop_push !== undefined) {
       updates.push('stop_push = ?');
@@ -265,7 +279,7 @@ export class DatabaseService {
       VALUES (?, ?, ?, ?, ?)
       RETURNING *
     `).bind(
-      sub.keyword1,
+      sub.keyword1 || null,
       sub.keyword2 || null,
       sub.keyword3 || null,
       sub.creator || null,
@@ -291,23 +305,23 @@ export class DatabaseService {
 
     if (sub.keyword1 !== undefined) {
       updates.push('keyword1 = ?');
-      values.push(sub.keyword1);
+      values.push(sub.keyword1 || null);
     }
     if (sub.keyword2 !== undefined) {
       updates.push('keyword2 = ?');
-      values.push(sub.keyword2);
+      values.push(sub.keyword2 || null);
     }
     if (sub.keyword3 !== undefined) {
       updates.push('keyword3 = ?');
-      values.push(sub.keyword3);
+      values.push(sub.keyword3 || null);
     }
     if (sub.creator !== undefined) {
       updates.push('creator = ?');
-      values.push(sub.creator);
+      values.push(sub.creator || null);
     }
     if (sub.category !== undefined) {
       updates.push('category = ?');
-      values.push(sub.category);
+      values.push(sub.category || null);
     }
 
     if (updates.length === 0) {

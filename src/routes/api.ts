@@ -152,6 +152,50 @@ apiRoutes.post('/telegram/webhook', async (c) => {
   }
 })
 
+// Bot 测试端点 - getMe
+apiRoutes.get('/telegram/getme', async (c) => {
+  try {
+    const dbService = c.get('dbService')
+    const config = await dbService.getBaseConfig()
+    
+    if (!config || !config.bot_token) {
+      return c.json({
+        success: false,
+        message: '请先配置Bot Token'
+      }, 400)
+    }
+    
+    const telegramService = new TelegramService(dbService, config.bot_token)
+    const botInfo = await telegramService.getBotInfo()
+    
+    if (!botInfo) {
+      return c.json({
+        success: false,
+        message: '无法获取Bot信息，请检查Token是否正确'
+      }, 400)
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Bot 测试成功',
+      data: {
+        id: botInfo.id,
+        is_bot: botInfo.is_bot,
+        first_name: botInfo.first_name,
+        username: botInfo.username,
+        can_join_groups: botInfo.can_join_groups,
+        can_read_all_group_messages: botInfo.can_read_all_group_messages,
+        supports_inline_queries: botInfo.supports_inline_queries
+      }
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `Bot 测试失败: ${error}`
+    }, 500)
+  }
+})
+
 // 获取Bot信息
 apiRoutes.get('/telegram/info', async (c) => {
   try {
@@ -179,10 +223,14 @@ apiRoutes.get('/telegram/info', async (c) => {
     let boundUserInfo = null
     if (config.chat_id) {
       try {
-        // 这里可以尝试获取用户信息，但由于API限制，我们先返回基本信息
+        // 使用存储的用户信息
         boundUserInfo = {
           chat_id: config.chat_id,
-          name: '已绑定用户' // 实际项目中可以存储用户信息
+          name: config.bound_user_name || '未知用户',
+          username: config.bound_user_username || null,
+          display_name: config.bound_user_name ? 
+            (config.bound_user_username ? `${config.bound_user_name} (@${config.bound_user_username})` : config.bound_user_name) :
+            '未知用户'
         }
       } catch (error) {
         console.error('获取绑定用户信息失败:', error)
@@ -247,11 +295,11 @@ apiRoutes.post('/subscriptions', async (c) => {
     
     const dbService = c.get('dbService')
     const subscription = await dbService.createKeywordSub({
-      keyword1: keyword1 ? keyword1.trim() : undefined,
-      keyword2: keyword2 ? keyword2.trim() : undefined,
-      keyword3: keyword3 ? keyword3.trim() : undefined,
-      creator: creator ? creator.trim() : undefined,
-      category: category ? category.trim() : undefined
+      keyword1: keyword1 && keyword1.trim() ? keyword1.trim() : undefined,
+      keyword2: keyword2 && keyword2.trim() ? keyword2.trim() : undefined,
+      keyword3: keyword3 && keyword3.trim() ? keyword3.trim() : undefined,
+      creator: creator && creator.trim() ? creator.trim() : undefined,
+      category: category && category.trim() ? category.trim() : undefined
     })
     
     return c.json({

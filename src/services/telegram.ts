@@ -92,6 +92,11 @@ export class TelegramService {
       await this.handleHelpCommand(ctx);
     });
 
+    // 处理 /getme 命令
+    this.bot.command('getme', async (ctx) => {
+      await this.handleGetMeCommand(ctx);
+    });
+
     // 处理其他消息
     this.bot.on('message:text', async (ctx) => {
       if (!ctx.message.text.startsWith('/')) {
@@ -159,17 +164,26 @@ export class TelegramService {
     const chatId = ctx.chat?.id;
     if (!chatId) return;
 
-    // 更新 chat_id
-    await this.dbService.updateBaseConfig({ chat_id: chatId.toString() });
+    // 获取用户信息
+    const user = ctx.from;
+    const userFullName = `${user?.first_name || ''}${user?.last_name ? ' ' + user.last_name : ''}`.trim();
+    const username = user?.username || '';
 
-    const userInfo = `${ctx.from?.first_name}${ctx.from?.last_name ? ' ' + ctx.from.last_name : ''}`;
+    // 更新 chat_id 和用户信息
+    await this.dbService.updateBaseConfig({ 
+      chat_id: chatId.toString(),
+      bound_user_name: userFullName,
+      bound_user_username: username
+    });
+
+    const userInfo = userFullName || '未知用户';
     const welcomeText = `
 🎉 **欢迎使用 NodeSeek RSS 监控机器人！**
 
-👤 **用户信息：** ${userInfo}
+👤 **用户信息：** ${userInfo}${username ? ` (@${username})` : ''}
 🆔 **Chat ID：** ${chatId}
 
-✅ 已保存您的 Chat ID，现在可以接收推送消息了。
+✅ 已保存您的 Chat ID 和用户信息，现在可以接收推送消息了。
 
 📋 **可用命令：**
 /help - 查看帮助
@@ -320,6 +334,7 @@ export class TelegramService {
 📋 **可用命令：**
 
 /start \\- 开始使用并保存用户信息
+/getme \\- 查看 Bot 信息和绑定状态
 /stop \\- 停止推送
 /resume \\- 恢复推送
 /list \\- 列出所有订阅
@@ -332,9 +347,60 @@ export class TelegramService {
 \\- 添加订阅后，系统会自动匹配包含关键词的文章
 \\- 可以设置多个关键词，文章需要包含所有关键词才会推送
 \\- 使用 /list 查看订阅ID，然后用 /delete 删除不需要的订阅
+\\- 使用 /getme 查看当前绑定状态和 Bot 详细信息
     `;
 
     await ctx.reply(helpText, { parse_mode: 'Markdown' });
+  }
+
+  /**
+   * 处理 /getme 命令
+   */
+  private async handleGetMeCommand(ctx: Context): Promise<void> {
+    try {
+      const botInfo = await this.getBotInfo();
+      const config = await this.dbService.getBaseConfig();
+      
+      if (!botInfo) {
+        await ctx.reply('❌ 无法获取 Bot 信息');
+        return;
+      }
+
+      const currentUser = ctx.from;
+      const currentUserName = `${currentUser?.first_name || ''}${currentUser?.last_name ? ' ' + currentUser.last_name : ''}`.trim();
+      const currentUsername = currentUser?.username || '';
+
+      let userBindingStatus = '';
+      if (config?.chat_id && config.chat_id === ctx.chat?.id?.toString()) {
+        userBindingStatus = `✅ **绑定状态：** 已绑定\n👤 **绑定用户：** ${config.bound_user_name || '未知'}${config.bound_user_username ? ` (@${config.bound_user_username})` : ''}`;
+      } else {
+        userBindingStatus = '❌ **绑定状态：** 未绑定（发送 /start 进行绑定）';
+      }
+
+      const text = `
+🤖 **NodeSeek RSS 监控机器人信息**
+
+**Bot 详情：**
+🆔 **Bot ID：** ${botInfo.id}
+👤 **Bot 用户名：** @${botInfo.username}
+📝 **Bot 名称：** ${botInfo.first_name}
+🤖 **是否为机器人：** ${botInfo.is_bot ? '是' : '否'}
+
+**当前用户：**
+👤 **您的名称：** ${currentUserName || '未知'}${currentUsername ? ` (@${currentUsername})` : ''}
+🆔 **您的 Chat ID：** ${ctx.chat?.id}
+
+**绑定信息：**
+${userBindingStatus}
+
+💡 **提示：** 使用 /help 查看所有可用命令
+      `;
+
+      await ctx.reply(text, { parse_mode: 'Markdown' });
+    } catch (error) {
+      console.error('处理 /getme 命令失败:', error);
+      await ctx.reply('❌ 获取信息时发生错误');
+    }
   }
 
   /**

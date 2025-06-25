@@ -553,7 +553,7 @@ function renderPosts(posts) {
     container.innerHTML = posts.map(post => `
         <div class="post-item">
             <h4>
-                <a href="https://www.nodeseek.com/post/${post.post_id}" target="_blank" rel="noopener noreferrer">
+                <a href="https://www.nodeseek.com/post-${post.post_id}-1" target="_blank" rel="noopener noreferrer">
                     ${post.title}
                 </a>
             </h4>

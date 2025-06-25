@@ -10,6 +10,8 @@
     ],
     "types": ["vite/client"],
     "jsx": "react-jsx",
-    "jsxImportSource": "hono/jsx"
+    "jsxImportSource": "hono/jsx",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   },
 }

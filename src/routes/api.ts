@@ -153,7 +153,7 @@ apiRoutes.post('/telegram/webhook', async (c) => {
 })
 
 // 获取Bot信息
-apiRoutes.get('/telegram/bot-info', async (c) => {
+apiRoutes.get('/telegram/info', async (c) => {
   try {
     const dbService = c.get('dbService')
     const config = await dbService.getBaseConfig()
@@ -166,12 +166,41 @@ apiRoutes.get('/telegram/bot-info', async (c) => {
     }
     
     const telegramService = new TelegramService(dbService, config.bot_token)
-    const result = await telegramService.getBotInfo()
+    const botInfo = await telegramService.getBotInfo()
+    
+    if (!botInfo) {
+      return c.json({
+        success: false,
+        message: '无法获取Bot信息，请检查Token是否正确'
+      }, 400)
+    }
+    
+    // 获取绑定用户信息
+    let boundUserInfo = null
+    if (config.chat_id) {
+      try {
+        // 这里可以尝试获取用户信息，但由于API限制，我们先返回基本信息
+        boundUserInfo = {
+          chat_id: config.chat_id,
+          name: '已绑定用户' // 实际项目中可以存储用户信息
+        }
+      } catch (error) {
+        console.error('获取绑定用户信息失败:', error)
+      }
+    }
     
     return c.json({
       success: true,
       message: '获取Bot信息成功',
-      data: result
+      data: {
+        bot: {
+          id: botInfo.id,
+          username: botInfo.username,
+          first_name: botInfo.first_name,
+          is_bot: botInfo.is_bot
+        },
+        bound_user: boundUserInfo
+      }
     })
   } catch (error) {
     return c.json({
@@ -205,16 +234,20 @@ apiRoutes.post('/subscriptions', async (c) => {
     const body = await c.req.json()
     const { keyword1, keyword2, keyword3, creator, category } = body
     
-    if (!keyword1 || keyword1.trim().length === 0) {
+    // 检查是否至少有一个关键词或者有创建者/分类
+    const hasKeywords = (keyword1 && keyword1.trim()) || (keyword2 && keyword2.trim()) || (keyword3 && keyword3.trim())
+    const hasCreatorOrCategory = (creator && creator.trim()) || (category && category.trim())
+    
+    if (!hasKeywords && !hasCreatorOrCategory) {
       return c.json({
         success: false,
-        message: '请提供至少一个关键词'
+        message: '请至少填写一个关键词，或者选择创建者/分类'
       }, 400)
     }
     
     const dbService = c.get('dbService')
     const subscription = await dbService.createKeywordSub({
-      keyword1: keyword1.trim(),
+      keyword1: keyword1 ? keyword1.trim() : undefined,
       keyword2: keyword2 ? keyword2.trim() : undefined,
       keyword3: keyword3 ? keyword3.trim() : undefined,
       creator: creator ? creator.trim() : undefined,

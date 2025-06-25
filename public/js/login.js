@@ -97,8 +97,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // 显示消息函数
     function showMessage(text, type = 'info') {
         messageDiv.textContent = text;
-        messageDiv.className = `message ${type}`;
         messageDiv.style.display = 'block';
+        
+        // 根据类型设置样式
+        if (type === 'error') {
+            messageDiv.style.backgroundColor = '#ffebee';
+            messageDiv.style.color = '#c62828';
+            messageDiv.style.border = '1px solid #ef5350';
+        } else if (type === 'success') {
+            messageDiv.style.backgroundColor = '#e8f5e8';
+            messageDiv.style.color = '#2e7d32';
+            messageDiv.style.border = '1px solid #66bb6a';
+        } else {
+            messageDiv.style.backgroundColor = '#e3f2fd';
+            messageDiv.style.color = '#1976d2';
+            messageDiv.style.border = '1px solid #42a5f5';
+        }
         
         // 3秒后自动隐藏
         setTimeout(() => {

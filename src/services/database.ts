@@ -26,7 +26,7 @@ export interface Post {
 
 export interface KeywordSub {
   id?: number;
-  keyword1: string;
+  keyword1?: string;
   keyword2?: string;
   keyword3?: string;
   creator?: string;

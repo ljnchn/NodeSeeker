@@ -415,24 +415,48 @@ function renderSubscriptions(subscriptions) {
         return;
     }
     
-    container.innerHTML = subscriptions.map(sub => `
-        <div class="subscription-item">
-            <h4>订阅 #${sub.id}</h4>
-            <div class="keywords">
-                ${[sub.keyword1, sub.keyword2, sub.keyword3].filter(k => k).join(' + ')}
+    // 分类映射表
+    const categoryMap = {
+        'daily': '📅 日常',
+        'tech': '💻 技术',
+        'info': 'ℹ️ 情报',
+        'review': '⭐ 测评',
+        'trade': '💰 交易',
+        'carpool': '🚗 拼车',
+        'promotion': '📢 推广',
+        'life': '🏠 生活',
+        'dev': '⚡ Dev',
+        'photo': '📷 贴图',
+        'expose': '🚨 曝光',
+        'sandbox': '🏖️ 沙盒'
+    };
+    
+    container.innerHTML = subscriptions.map(sub => {
+        const keywords = [sub.keyword1, sub.keyword2, sub.keyword3].filter(k => k);
+        const hasKeywords = keywords.length > 0;
+        
+        return `
+            <div class="subscription-item">
+                <h4>订阅 #${sub.id}</h4>
+                ${hasKeywords ? `
+                    <div class="keywords">
+                        ${keywords.join(' + ')}
+                    </div>
+                ` : ''}
+                <div class="filters">
+                    ${sub.creator ? `<span>👤 创建者: ${sub.creator}</span>` : ''}
+                    ${sub.category ? `<span>📂 分类: ${categoryMap[sub.category] || sub.category}</span>` : ''}
+                    ${!hasKeywords && !sub.creator && !sub.category ? '<span style="color: #999;">无筛选条件</span>' : ''}
+                </div>
+                <div class="actions">
+                    <button class="btn btn-danger" onclick="deleteSubscription(${sub.id})">
+                        <span class="btn-icon">🗑️</span>
+                        删除
+                    </button>
+                </div>
             </div>
-            <div class="filters">
-                ${sub.creator ? `创建者: ${sub.creator}` : ''}
-                ${sub.category ? `分类: ${sub.category}` : ''}
-            </div>
-            <div class="actions">
-                <button class="btn btn-danger" onclick="deleteSubscription(${sub.id})">
-                    <span class="btn-icon">🗑️</span>
-                    删除
-                </button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // 处理添加订阅
@@ -441,12 +465,21 @@ async function handleAddSubscription(e) {
     
     const formData = new FormData(e.target);
     const data = {
-        keyword1: formData.get('keyword1'),
-        keyword2: formData.get('keyword2'),
-        keyword3: formData.get('keyword3'),
-        creator: formData.get('creator'),
-        category: formData.get('category')
+        keyword1: formData.get('keyword1')?.trim() || '',
+        keyword2: formData.get('keyword2')?.trim() || '',
+        keyword3: formData.get('keyword3')?.trim() || '',
+        creator: formData.get('creator')?.trim() || '',
+        category: formData.get('category') || ''
     };
+
+    // 验证：至少需要一个关键词或者选择了创建者/分类
+    const hasKeywords = data.keyword1 || data.keyword2 || data.keyword3;
+    const hasCreatorOrCategory = data.creator || data.category;
+    
+    if (!hasKeywords && !hasCreatorOrCategory) {
+        showMessage('请至少填写一个关键词，或者选择创建者/分类', 'error');
+        return;
+    }
 
     try {
         const response = await apiRequest('/api/subscriptions', 'POST', data);

@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "nodeseeker",
-  "compatibility_date": "2025-04-01",
+  "compatibility_date": "2025-01-01",
   "compatibility_flags": ["nodejs_compat"],
   "main": "./src/index.tsx",
   "d1_databases": [
@@ -25,6 +25,6 @@
   },
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "binding": "ASSETS"
   }
 }

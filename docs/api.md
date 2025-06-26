@@ -443,6 +443,34 @@ POST /api/telegram/unbind
 }
 ```
 
+### 设置 Bot 命令菜单
+
+```http
+POST /api/telegram/set-commands
+```
+
+**描述**: 为 Bot 设置命令菜单，用户在 Telegram 中可以通过菜单选择命令
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "Bot 命令菜单设置成功",
+  "data": {
+    "bot_username": "your_bot",
+    "commands_count": 10
+  }
+}
+```
+
+**错误响应**:
+```json
+{
+  "success": false,
+  "message": "请先配置Bot Token"
+}
+```
+
 ## Telegram Webhook
 
 ### 接收 Telegram 更新

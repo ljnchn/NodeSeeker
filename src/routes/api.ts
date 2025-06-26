@@ -148,11 +148,15 @@ apiRoutes.post('/telegram/setup-bot', async (c) => {
     const webhookResult = await telegramService.setWebhook(webhookUrl)
     
     if (!webhookResult) {
+      endTimer(0, false);
       return c.json({
         success: false,
         message: 'Bot Token 有效，但 Webhook 设置失败'
       }, 400)
     }
+    
+    // 设置 Bot 命令菜单
+    const commandsResult = await telegramService.setBotCommands()
     
     // 保存 Bot Token 到配置
     const config = await dbService.updateBaseConfig({
@@ -166,9 +170,10 @@ apiRoutes.post('/telegram/setup-bot', async (c) => {
       }, 500)
     }
     
+    endTimer(1, false);
     return c.json({
       success: true,
-      message: 'Bot Token 设置成功，Webhook 已自动配置',
+      message: `Bot Token 设置成功，Webhook 已自动配置${commandsResult ? '，命令菜单已创建' : ''}`,
       data: {
         bot_info: {
           id: botInfo.id,
@@ -177,9 +182,10 @@ apiRoutes.post('/telegram/setup-bot', async (c) => {
           is_bot: botInfo.is_bot
         },
         webhook_url: webhookUrl,
+        commands_configured: commandsResult,
         binding_instructions: {
           step1: '在 Telegram 中搜索并打开你的 Bot',
-          step2: '发送 /start 命令给 Bot',
+          step2: '发送 /start 命令给 Bot，或点击菜单按钮选择命令',
           step3: 'Bot 将自动保存你的 Chat ID 完成绑定',
           bot_username: botInfo.username ? `@${botInfo.username}` : null
         }
@@ -224,6 +230,56 @@ apiRoutes.put('/telegram/push-settings', async (c) => {
     return c.json({
       success: false,
       message: `更新推送设置失败: ${error}`
+    }, 500)
+  }
+})
+
+// 设置 Bot 命令菜单
+apiRoutes.post('/telegram/set-commands', async (c) => {
+  try {
+    const dbService = c.get('dbService')
+    const config = await dbService.getBaseConfig()
+    
+    if (!config || !config.bot_token) {
+      return c.json({
+        success: false,
+        message: '请先配置Bot Token'
+      }, 400)
+    }
+    
+    const telegramService = new TelegramService(dbService, config.bot_token)
+    
+    // 验证Bot连接
+    const botInfo = await telegramService.getBotInfo()
+    if (!botInfo) {
+      return c.json({
+        success: false,
+        message: '无法连接到Bot，请检查Token是否正确'
+      }, 400)
+    }
+    
+    // 设置命令菜单
+    const result = await telegramService.setBotCommands()
+    
+    if (result) {
+      return c.json({
+        success: true,
+        message: 'Bot 命令菜单设置成功',
+        data: {
+          bot_username: botInfo.username,
+          commands_count: 10
+        }
+      })
+    } else {
+      return c.json({
+        success: false,
+        message: '设置 Bot 命令菜单失败'
+      }, 500)
+    }
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `设置命令菜单失败: ${error}`
     }, 500)
   }
 })
@@ -436,6 +492,56 @@ apiRoutes.post('/telegram/unbind', async (c) => {
     return c.json({
       success: false,
       message: `解除绑定失败: ${error}`
+    }, 500)
+  }
+})
+
+// 设置 Bot 命令菜单
+apiRoutes.post('/telegram/set-commands', async (c) => {
+  try {
+    const dbService = c.get('dbService')
+    const config = await dbService.getBaseConfig()
+    
+    if (!config || !config.bot_token) {
+      return c.json({
+        success: false,
+        message: '请先配置Bot Token'
+      }, 400)
+    }
+    
+    const telegramService = new TelegramService(dbService, config.bot_token)
+    
+    // 验证Bot连接
+    const botInfo = await telegramService.getBotInfo()
+    if (!botInfo) {
+      return c.json({
+        success: false,
+        message: '无法连接到Bot，请检查Token是否正确'
+      }, 400)
+    }
+    
+    // 设置命令菜单
+    const result = await telegramService.setBotCommands()
+    
+    if (result) {
+      return c.json({
+        success: true,
+        message: 'Bot 命令菜单设置成功',
+        data: {
+          bot_username: botInfo.username,
+          commands_count: 10
+        }
+      })
+    } else {
+      return c.json({
+        success: false,
+        message: '设置 Bot 命令菜单失败'
+      }, 500)
+    }
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `设置命令菜单失败: ${error}`
     }, 500)
   }
 })

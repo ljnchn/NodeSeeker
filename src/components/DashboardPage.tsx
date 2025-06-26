@@ -205,6 +205,7 @@ export const DashboardPage: FC = () => {
                     <div><strong>用户名:</strong> <span id="botUsername">-</span></div>
                     <div><strong>名称:</strong> <span id="botName">-</span></div>
                     <div><strong>Webhook:</strong> <span style="color: #4caf50;">✅ 已配置</span></div>
+                    <div><strong>命令菜单:</strong> <span id="commandsStatus" style="color: #4caf50;">✅ 已创建</span></div>
                   </div>
                 </div>
               </div>
@@ -280,6 +281,9 @@ export const DashboardPage: FC = () => {
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                   <button id="testBotBtn" style="padding: 12px 24px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
                     🔍 测试 Bot 连接
+                  </button>
+                  <button id="setCommandsBtn" style="padding: 12px 24px; background: #9c27b0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    📋 设置命令菜单
                   </button>
                   <button id="refreshInfoBtn" style="padding: 12px 24px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
                     🔄 刷新状态

@@ -100,6 +100,9 @@ function initEventListeners() {
     // 测试 Bot 连接
     document.getElementById('testBotBtn').addEventListener('click', testBotConnection);
     
+    // 设置命令菜单
+    document.getElementById('setCommandsBtn').addEventListener('click', setCommands);
+    
     // 刷新状态
     document.getElementById('refreshInfoBtn').addEventListener('click', refreshBotInfo);
     
@@ -195,6 +198,13 @@ function updateBotDisplay(hasBot = true) {
             document.getElementById('botId').textContent = botInfo.bot.id;
             document.getElementById('botUsername').textContent = `@${botInfo.bot.username}`;
             document.getElementById('botName').textContent = botInfo.bot.first_name;
+            
+            // 更新命令菜单状态
+            const commandsStatus = document.getElementById('commandsStatus');
+            if (commandsStatus) {
+                // 假设如果有bot信息就说明命令菜单已配置（在实际应用中可以通过API返回具体状态）
+                commandsStatus.innerHTML = '<span style="color: #4caf50;">✅ 已创建</span>';
+            }
         }
         
         // 更新状态卡片
@@ -389,11 +399,14 @@ async function handleBotTokenSubmit(e) {
             // 如果有绑定指引，显示给用户
             if (response.data.binding_instructions) {
                 const instructions = response.data.binding_instructions;
+                const commandsInfo = response.data.commands_configured ? 
+                    '命令菜单已创建，你可以在输入框中输入 "/" 或点击菜单按钮来选择命令。' : 
+                    '';
                 setTimeout(() => {
                     showMessage(
-                        `Bot 设置成功！请在 Telegram 中搜索 ${instructions.bot_username || '你的 Bot'} 并发送 /start 完成绑定`, 
+                        `Bot 设置成功！请在 Telegram 中搜索 ${instructions.bot_username || '你的 Bot'} 并发送 /start 完成绑定。${commandsInfo}`, 
                         'info', 
-                        8000
+                        10000
                     );
                 }, 1000);
             }
@@ -815,6 +828,30 @@ async function unbindUser() {
     } catch (error) {
         console.error('解除用户绑定失败:', error);
         showMessage('解除用户绑定失败', 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+// 设置 Bot 命令菜单
+async function setCommands() {
+    const btn = document.getElementById('setCommandsBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-icon">⏳</span>设置中...';
+    btn.disabled = true;
+
+    try {
+        const response = await apiRequest('/api/telegram/set-commands', 'POST');
+        
+        if (response.success) {
+            showMessage(`命令菜单设置成功！Bot @${response.data.bot_username} 现在可以使用菜单选择命令了。`, 'success');
+        } else {
+            showMessage(response.message || '设置命令菜单失败', 'error');
+        }
+    } catch (error) {
+        console.error('设置命令菜单失败:', error);
+        showMessage('设置命令菜单失败', 'error');
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;

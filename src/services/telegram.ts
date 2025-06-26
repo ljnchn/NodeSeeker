@@ -49,6 +49,27 @@ export class TelegramService {
   }
 
   /**
+   * 获取分类对应的图标
+   */
+  private getCategoryIcon(category: string): string {
+    const categoryMap: { [key: string]: string } = {
+      'daily': '📅',
+      'tech': '💻',
+      'info': 'ℹ️',
+      'review': '⭐',
+      'trade': '💰',
+      'carpool': '🚗',
+      'promotion': '📢',
+      'life': '🏠',
+      'dev': '⚡',
+      'photo': '📷',
+      'expose': '🚨',
+      'sandbox': '🏖️'
+    };
+    return categoryMap[category] || '📂';
+  }
+
+  /**
    * 设置命令处理器
    */
   private setupHandlers(): void {
@@ -156,6 +177,33 @@ export class TelegramService {
   }
 
   /**
+   * 设置 Bot 命令菜单
+   */
+  async setBotCommands(): Promise<boolean> {
+    try {
+      const commands = [
+        { command: 'start', description: '开始使用并绑定账户' },
+        { command: 'help', description: '查看帮助信息' },
+        { command: 'getme', description: '查看Bot和绑定状态' },
+        { command: 'list', description: '查看订阅列表' },
+        { command: 'add', description: '添加订阅 (用法: /add 关键词1 关键词2)' },
+        { command: 'delete', description: '删除订阅 (用法: /delete 订阅ID)' },
+        { command: 'post', description: '查看最近文章' },
+        { command: 'stop', description: '停止推送' },
+        { command: 'resume', description: '恢复推送' },
+        { command: 'unbind', description: '解除用户绑定' }
+      ];
+
+      await this.bot.api.setMyCommands(commands);
+      console.log('Bot 命令菜单设置成功');
+      return true;
+    } catch (error) {
+      console.error('设置 Bot 命令菜单失败:', error);
+      return false;
+    }
+  }
+
+  /**
    * 处理 /start 命令
    */
   private async handleStartCommand(ctx: Context): Promise<void> {
@@ -239,11 +287,11 @@ export class TelegramService {
       text += `   **关键词：** ${keywords.join(' \\+ ')}\n`;
       
       if (sub.creator) {
-        text += `   **指定作者：** ${sub.creator}\n`;
+        text += `   👤 **指定作者：** ${sub.creator}\n`;
       }
       
       if (sub.category) {
-        text += `   **指定分类：** ${sub.category}\n`;
+        text += `   ${this.getCategoryIcon(sub.category)} **指定分类：** ${sub.category}\n`;
       }
       
       text += `   **创建时间：** ${new Date(sub.created_at || '').toLocaleString('zh-CN')}\n\n`;
@@ -330,7 +378,7 @@ export class TelegramService {
                     post.push_status === 1 ? '✅已推送' : '❌无需推送';
       
       text += `${index + 1}\\. [${post.title}](https://www.nodeseek.com/post-${post.post_id}-1)\n`;
-      text += `   **作者：** ${post.creator} \\| **分类：** ${post.category}\n`;
+      text += `   👤 **${post.creator}** \\| ${this.getCategoryIcon(post.category)} **${post.category}**\n`;
       text += `   **状态：** ${status}\n`;
       text += `   **时间：** ${new Date(post.pub_date).toLocaleString('zh-CN')}\n\n`;
     });
@@ -456,20 +504,28 @@ ${userBindingStatus}
         .filter(k => k && k.trim().length > 0)
         .join(' ');
 
-        // 构建帖子链接
-        const postUrl = `https://www.nodeseek.com/post-${post.post_id}-1`;
+      // 构建帖子链接
+      const postUrl = `https://www.nodeseek.com/post-${post.post_id}-1`;
 
-        // 去除 post.title 会影响markdown链接的符号
-        const title = post.title
-          .replace(/\[/g, "「")
-          .replace(/\]/g, "」")
-          .replace(/\(/g, "（")
-          .replace(/\)/g, "）");
+      // 去除 post.title 会影响markdown链接的符号
+      const title = post.title
+        .replace(/\[/g, "「")
+        .replace(/\]/g, "」")
+        .replace(/\(/g, "（")
+        .replace(/\)/g, "）");
+
+      // 构建文章信息行
+      const authorInfo = post.creator ? `👤 **${post.creator}**` : '';
+      const categoryInfo = post.category ? `${this.getCategoryIcon(post.category)} **${post.category}**` : '';
+      
+      // 组合作者和分类信息（如果都存在则用分隔符连接）
+      const metaInfo = [authorInfo, categoryInfo].filter(info => info).join(' \\| ');
 
       const text = `
 🎯 **${keywords}**
 
 📰 **[${title}](${postUrl})**
+${metaInfo ? `\n${metaInfo}` : ''}
       `;
 
       const success = await this.sendMessage(config.chat_id, text);

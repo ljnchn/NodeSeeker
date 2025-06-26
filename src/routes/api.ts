@@ -5,6 +5,7 @@ import { AuthService } from '../services/auth'
 import { RSSService } from '../services/rss'
 import { TelegramService } from '../services/telegram'
 import { MatcherService } from '../services/matcher'
+import { performanceMonitor } from '../services/performance'
 
 type Bindings = {
   DB: D1Database
@@ -391,16 +392,41 @@ apiRoutes.delete('/subscriptions/:id', async (c) => {
   }
 })
 
-// 获取文章列表
+// 获取文章列表（支持分页和过滤）
 apiRoutes.get('/posts', async (c) => {
   try {
+    const page = parseInt(c.req.query('page') || '1')
     const limit = parseInt(c.req.query('limit') || '20')
+    const pushStatus = c.req.query('push_status')
+    const creator = c.req.query('creator')
+    const category = c.req.query('category')
+    const startDate = c.req.query('start_date')
+    const endDate = c.req.query('end_date')
+    
     const dbService = c.get('dbService')
-    const posts = await dbService.getRecentPosts(limit)
+    
+    // 构建过滤条件
+    const filters: any = {}
+    if (pushStatus !== undefined && pushStatus !== '') {
+      filters.pushStatus = parseInt(pushStatus)
+    }
+    if (creator) filters.creator = creator
+    if (category) filters.category = category
+    if (startDate) filters.startDate = startDate
+    if (endDate) filters.endDate = endDate
+    
+    // 使用新的分页方法
+    const result = await dbService.getPostsWithPagination(page, limit, filters)
     
     return c.json({
       success: true,
-      data: posts
+      data: result.posts,
+      pagination: {
+        page: result.page,
+        total: result.total,
+        totalPages: result.totalPages,
+        limit
+      }
     })
   } catch (error) {
     return c.json({
@@ -499,5 +525,48 @@ apiRoutes.get('/stats/today', async (c) => {
       success: false,
       message: `获取今日统计失败: ${error}`
     }, 500)
+  }
+})
+
+// 获取性能监控指标
+apiRoutes.get('/performance/metrics', async (c) => {
+  try {
+    const timeWindow = parseInt(c.req.query('window') || '300000'); // 默认5分钟
+    
+    const [systemMetrics, queryStats] = await Promise.all([
+      Promise.resolve(performanceMonitor.getSystemMetrics()),
+      Promise.resolve(performanceMonitor.getQueryStats(timeWindow))
+    ]);
+    
+    return c.json({
+      success: true,
+      data: {
+        system: systemMetrics,
+        queries: queryStats,
+        recommendations: performanceMonitor.getPerformanceRecommendations()
+      }
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `获取性能指标失败: ${error}`
+    }, 500);
+  }
+})
+
+// 清理性能监控数据
+apiRoutes.post('/performance/cleanup', async (c) => {
+  try {
+    performanceMonitor.cleanup();
+    
+    return c.json({
+      success: true,
+      message: '性能监控数据清理完成'
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `清理性能数据失败: ${error}`
+    }, 500);
   }
 })

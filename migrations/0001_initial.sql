@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS base_config (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- psots 表
+-- posts 表
 CREATE TABLE IF NOT EXISTS posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   post_id INTEGER NOT NULL,
@@ -27,7 +27,19 @@ CREATE TABLE IF NOT EXISTS posts (
   push_date DATETIME DEFAULT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 为 posts 表创建性能优化索引
 CREATE INDEX IF NOT EXISTS idx_posts_post_id ON posts(post_id);
+CREATE INDEX IF NOT EXISTS idx_posts_push_status ON posts(push_status);
+CREATE INDEX IF NOT EXISTS idx_posts_pub_date ON posts(pub_date);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
+CREATE INDEX IF NOT EXISTS idx_posts_push_date ON posts(push_date);
+CREATE INDEX IF NOT EXISTS idx_posts_creator ON posts(creator);
+CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category);
+
+-- 复合索引用于常见查询模式
+CREATE INDEX IF NOT EXISTS idx_posts_status_date ON posts(push_status, pub_date);
+CREATE INDEX IF NOT EXISTS idx_posts_creator_category ON posts(creator, category);
 
 -- keywords_sub 表
 CREATE TABLE IF NOT EXISTS keywords_sub (
@@ -40,4 +52,9 @@ CREATE TABLE IF NOT EXISTS keywords_sub (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 为关键词订阅表添加索引
+CREATE INDEX IF NOT EXISTS idx_keywords_sub_creator ON keywords_sub(creator);
+CREATE INDEX IF NOT EXISTS idx_keywords_sub_category ON keywords_sub(category);
+CREATE INDEX IF NOT EXISTS idx_keywords_sub_created_at ON keywords_sub(created_at);
 

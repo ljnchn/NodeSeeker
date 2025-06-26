@@ -37,8 +37,11 @@ export class MatcherService {
    * 检查文章是否匹配任何订阅
    */
   async checkPostMatches(post: Post): Promise<MatchResult[]> {
-    const subscriptions = await this.dbService.getAllKeywordSubs();
-    const config = await this.dbService.getBaseConfig();
+    // 并发获取订阅和配置信息
+    const [subscriptions, config] = await Promise.all([
+      this.dbService.getAllKeywordSubs(),
+      this.dbService.getBaseConfig()
+    ]);
     
     if (!config) {
       return [];
@@ -46,8 +49,17 @@ export class MatcherService {
 
     const results: MatchResult[] = [];
 
+    // 预处理文章内容以提高匹配性能
+    const preprocessedPost = {
+      ...post,
+      titleLower: post.title.toLowerCase(),
+      memoLower: post.memo.toLowerCase(),
+      creatorLower: post.creator.toLowerCase(),
+      categoryLower: post.category.toLowerCase()
+    };
+
     for (const sub of subscriptions) {
-      const matchResult = this.matchPostWithSubscription(post, sub, config);
+      const matchResult = this.matchPostWithSubscription(preprocessedPost, sub, config);
       if (matchResult.matched) {
         results.push(matchResult);
       }
@@ -59,7 +71,12 @@ export class MatcherService {
   /**
    * 匹配单个文章与单个订阅
    */
-  private matchPostWithSubscription(post: Post, subscription: KeywordSub, config: BaseConfig): MatchResult {
+  private matchPostWithSubscription(post: Post & {
+    titleLower?: string;
+    memoLower?: string;
+    creatorLower?: string;
+    categoryLower?: string;
+  }, subscription: KeywordSub, config: BaseConfig): MatchResult {
     const keywords = [subscription.keyword1, subscription.keyword2, subscription.keyword3]
       .filter(k => k && k.trim().length > 0);
 
@@ -77,11 +94,11 @@ export class MatcherService {
       };
     }
 
-    // 准备搜索文本
-    const titleText = post.title.toLowerCase();
-    const contentText = post.memo.toLowerCase();
-    const creatorText = post.creator.toLowerCase();
-    const categoryText = post.category.toLowerCase();
+    // 使用预处理的文本或实时转换
+    const titleText = post.titleLower || post.title.toLowerCase();
+    const contentText = post.memoLower || post.memo.toLowerCase();
+    const creatorText = post.creatorLower || post.creator.toLowerCase();
+    const categoryText = post.categoryLower || post.category.toLowerCase();
 
     // 检查作者精确匹配过滤（如果指定了creator，必须精确匹配）
     if (subscription.creator && subscription.creator.trim().length > 0) {

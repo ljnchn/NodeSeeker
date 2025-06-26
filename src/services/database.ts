@@ -38,7 +38,42 @@ export interface KeywordSub {
 }
 
 export class DatabaseService {
-  constructor(private db: D1Database) {}
+  private queryCache: Map<string, { data: any; timestamp: number; ttl: number }>;
+  private readonly CACHE_TTL = 60000; // 1分钟缓存
+
+  constructor(private db: D1Database) {
+    this.queryCache = new Map();
+  }
+
+  // 缓存助手方法
+  private getCacheKey(method: string, params: any[]): string {
+    return `${method}:${JSON.stringify(params)}`;
+  }
+
+  private getFromCache<T>(key: string): T | null {
+    const cached = this.queryCache.get(key);
+    if (cached && Date.now() - cached.timestamp < cached.ttl) {
+      return cached.data as T;
+    }
+    this.queryCache.delete(key);
+    return null;
+  }
+
+  private setCache(key: string, data: any, ttl: number = this.CACHE_TTL): void {
+    this.queryCache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl
+    });
+  }
+
+  private clearCacheByPattern(pattern: string): void {
+    for (const key of this.queryCache.keys()) {
+      if (key.includes(pattern)) {
+        this.queryCache.delete(key);
+      }
+    }
+  }
 
   /**
    * 检查数据库表是否存在
@@ -119,6 +154,31 @@ export class DatabaseService {
         CREATE INDEX IF NOT EXISTS idx_posts_post_id ON posts(post_id)
       `).run();
 
+      // 添加更多索引以优化查询性能
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_posts_push_status ON posts(push_status)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_posts_pub_date ON posts(pub_date)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_posts_push_date ON posts(push_date)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_posts_creator ON posts(creator)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category)
+      `).run();
+
       // 创建关键词订阅表
       await this.db.prepare(`
         CREATE TABLE IF NOT EXISTS keywords_sub (
@@ -131,6 +191,19 @@ export class DatabaseService {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
+      `).run();
+
+      // 为关键词订阅表添加索引
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_keywords_sub_creator ON keywords_sub(creator)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_keywords_sub_category ON keywords_sub(category)
+      `).run();
+
+      await this.db.prepare(`
+        CREATE INDEX IF NOT EXISTS idx_keywords_sub_created_at ON keywords_sub(created_at)
       `).run();
 
       console.log('数据库表初始化完成');
@@ -236,6 +309,10 @@ export class DatabaseService {
       post.push_date || null
     ).first();
 
+    // 清除相关缓存
+    this.clearCacheByPattern('posts');
+    this.clearCacheByPattern('Stats');
+
     return result as unknown as Post;
   }
 
@@ -270,6 +347,125 @@ export class DatabaseService {
     `).all();
     
     return result.results as unknown as Post[];
+  }
+
+  // 新增：带分页的文章查询
+  async getPostsWithPagination(
+    page: number = 1, 
+    limit: number = 20, 
+    filters?: {
+      pushStatus?: number;
+      creator?: string;
+      category?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ): Promise<{
+    posts: Post[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const offset = (page - 1) * limit;
+    
+    // 构建查询条件
+    let whereClause = '';
+    let countWhereClause = '';
+    const params: any[] = [];
+    const countParams: any[] = [];
+    
+    if (filters) {
+      const conditions: string[] = [];
+      
+      if (filters.pushStatus !== undefined) {
+        conditions.push('push_status = ?');
+        params.push(filters.pushStatus);
+        countParams.push(filters.pushStatus);
+      }
+      
+      if (filters.creator) {
+        conditions.push('creator LIKE ?');
+        params.push(`%${filters.creator}%`);
+        countParams.push(`%${filters.creator}%`);
+      }
+      
+      if (filters.category) {
+        conditions.push('category LIKE ?');
+        params.push(`%${filters.category}%`);
+        countParams.push(`%${filters.category}%`);
+      }
+      
+      if (filters.startDate) {
+        conditions.push('DATE(pub_date) >= ?');
+        params.push(filters.startDate);
+        countParams.push(filters.startDate);
+      }
+      
+      if (filters.endDate) {
+        conditions.push('DATE(pub_date) <= ?');
+        params.push(filters.endDate);
+        countParams.push(filters.endDate);
+      }
+      
+      if (conditions.length > 0) {
+        whereClause = 'WHERE ' + conditions.join(' AND ');
+        countWhereClause = whereClause;
+      }
+    }
+    
+    // 执行并发查询
+    const [postsResult, countResult] = await Promise.all([
+      this.db.prepare(`
+        SELECT * FROM posts 
+        ${whereClause}
+        ORDER BY pub_date DESC 
+        LIMIT ? OFFSET ?
+      `).bind(...params, limit, offset).all(),
+      
+      this.db.prepare(`
+        SELECT COUNT(*) as count FROM posts 
+        ${countWhereClause}
+      `).bind(...countParams).first()
+    ]);
+    
+    const total = (countResult as any)?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+    
+    return {
+      posts: postsResult.results as unknown as Post[],
+      total,
+      page,
+      totalPages
+    };
+  }
+
+  // 新增：批量更新文章推送状态
+  async batchUpdatePostPushStatus(updates: Array<{
+    postId: number;
+    pushStatus: number;
+    subId?: number;
+    pushDate?: string;
+  }>): Promise<void> {
+    if (updates.length === 0) return;
+    
+    // 使用事务进行批量更新
+    const statements = updates.map(update => ({
+      sql: `
+        UPDATE posts 
+        SET push_status = ?, sub_id = ?, push_date = ?
+        WHERE post_id = ?
+      `,
+      params: [
+        update.pushStatus,
+        update.subId || null,
+        update.pushDate || null,
+        update.postId
+      ]
+    }));
+    
+    await this.db.batch(statements.map(stmt => 
+      this.db.prepare(stmt.sql).bind(...stmt.params)
+    ));
   }
 
   // 关键词订阅相关操作
@@ -356,21 +552,39 @@ export class DatabaseService {
     }
   }
 
-  // 统计查询方法（使用 COUNT 提高效率）
+  // 统计查询方法（使用 COUNT 提高效率和缓存）
   async getPostsCount(): Promise<number> {
+    const cacheKey = this.getCacheKey('getPostsCount', []);
+    const cached = this.getFromCache<number>(cacheKey);
+    if (cached !== null) return cached;
+
     const result = await this.db.prepare('SELECT COUNT(*) as count FROM posts').first();
-    return (result as any)?.count || 0;
+    const count = (result as any)?.count || 0;
+    this.setCache(cacheKey, count, 30000); // 30秒缓存
+    return count;
   }
 
   async getPostsCountByStatus(pushStatus: number): Promise<number> {
+    const cacheKey = this.getCacheKey('getPostsCountByStatus', [pushStatus]);
+    const cached = this.getFromCache<number>(cacheKey);
+    if (cached !== null) return cached;
+
     const result = await this.db.prepare('SELECT COUNT(*) as count FROM posts WHERE push_status = ?')
       .bind(pushStatus).first();
-    return (result as any)?.count || 0;
+    const count = (result as any)?.count || 0;
+    this.setCache(cacheKey, count, 30000); // 30秒缓存
+    return count;
   }
 
   async getSubscriptionsCount(): Promise<number> {
+    const cacheKey = this.getCacheKey('getSubscriptionsCount', []);
+    const cached = this.getFromCache<number>(cacheKey);
+    if (cached !== null) return cached;
+
     const result = await this.db.prepare('SELECT COUNT(*) as count FROM keywords_sub').first();
-    return (result as any)?.count || 0;
+    const count = (result as any)?.count || 0;
+    this.setCache(cacheKey, count, 60000); // 1分钟缓存（关键词变化较少）
+    return count;
   }
 
   async getTodayPostsCount(): Promise<number> {

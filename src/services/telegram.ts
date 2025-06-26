@@ -375,15 +375,9 @@ export class TelegramService {
       return;
     }
 
-    let text = '📰 **最近10条文章：**\n\n';
+    let text = '📰 最近10条文章\n\n';
     posts.forEach((post, index) => {
-      const status = post.push_status === 0 ? '⏳未推送' : 
-                    post.push_status === 1 ? '✅已推送' : '❌无需推送';
-      
-      text += `${index + 1}\\. [${post.title}](https://www.nodeseek.com/post-${post.post_id}-1)\n`;
-      text += `   👤 **${post.creator}** \\| ${this.getCategoryIcon(post.category)} **${post.category}**\n`;
-      text += `   **状态：** ${status}\n`;
-      text += `   **时间：** ${new Date(post.pub_date).toLocaleString('zh-CN')}\n\n`;
+      text += `${index + 1}. [${post.title}](https://www.nodeseek.com/post-${post.post_id}-1)\n`;
     });
 
     await ctx.reply(text, { parse_mode: 'Markdown' });

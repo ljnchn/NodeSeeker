@@ -233,11 +233,14 @@ export const DashboardPage: FC = () => {
                 <div id="boundUserInfo" style="display: none;">
                   <div style="background: #e8f5e8; padding: 16px; border-radius: 6px;">
                     <h4 style="font-size: 14px; margin-bottom: 12px; color: #2e7d32;">✅ 绑定成功</h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px; margin-bottom: 16px;">
                       <div><strong>用户名:</strong> <span id="boundUserName">-</span></div>
                       <div><strong>Telegram 用户名:</strong> <span id="boundUserUsername">-</span></div>
                       <div><strong>Chat ID:</strong> <span id="boundChatId">-</span></div>
                     </div>
+                    <button id="unbindUserBtn" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                      🔓 解除绑定
+                    </button>
                   </div>
                 </div>
               </div>

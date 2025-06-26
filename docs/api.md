@@ -412,6 +412,37 @@ GET /api/telegram/info
 
 当用户未绑定时，`bound_user` 为 `null`，`binding_instructions` 包含绑定步骤。
 
+### 解除用户绑定
+
+```http
+POST /api/telegram/unbind
+```
+
+**描述**: 解除当前绑定的 Telegram 用户
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "用户绑定已成功解除",
+  "data": {
+    "unbound_user": {
+      "name": "用户名",
+      "username": "telegram_username",
+      "chat_id": "987654321"
+    }
+  }
+}
+```
+
+**当没有绑定用户时**:
+```json
+{
+  "success": true,
+  "message": "当前未绑定任何用户"
+}
+```
+
 ## Telegram Webhook
 
 ### 接收 Telegram 更新

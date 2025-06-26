@@ -383,6 +383,63 @@ apiRoutes.get('/telegram/info', async (c) => {
   }
 })
 
+// 解除用户绑定
+apiRoutes.post('/telegram/unbind', async (c) => {
+  try {
+    const dbService = c.get('dbService')
+    const config = await dbService.getBaseConfig()
+    
+    if (!config) {
+      return c.json({
+        success: false,
+        message: '配置不存在'
+      }, 404)
+    }
+    
+    // 如果当前没有绑定用户，直接返回成功
+    if (!config.chat_id) {
+      return c.json({
+        success: true,
+        message: '当前未绑定任何用户'
+      })
+    }
+    
+    // 保存原绑定信息用于返回
+    const unboundUser = {
+      name: config.bound_user_name || '未知用户',
+      username: config.bound_user_username || null,
+      chat_id: config.chat_id
+    }
+    
+    // 清除绑定信息
+    const updatedConfig = await dbService.updateBaseConfig({
+      chat_id: '',
+      bound_user_name: undefined,
+      bound_user_username: undefined
+    })
+    
+    if (!updatedConfig) {
+      return c.json({
+        success: false,
+        message: '解除绑定失败'
+      }, 500)
+    }
+    
+    return c.json({
+      success: true,
+      message: '用户绑定已成功解除',
+      data: {
+        unbound_user: unboundUser
+      }
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `解除绑定失败: ${error}`
+    }, 500)
+  }
+})
+
 // 获取订阅列表
 apiRoutes.get('/subscriptions', async (c) => {
   try {

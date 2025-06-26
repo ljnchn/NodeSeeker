@@ -97,6 +97,11 @@ export class TelegramService {
       await this.handleGetMeCommand(ctx);
     });
 
+    // 处理 /unbind 命令
+    this.bot.command('unbind', async (ctx) => {
+      await this.handleUnbindCommand(ctx);
+    });
+
     // 处理其他消息
     this.bot.on('message:text', async (ctx) => {
       if (!ctx.message.text.startsWith('/')) {
@@ -344,6 +349,7 @@ export class TelegramService {
 
 /start \\- 开始使用并保存用户信息
 /getme \\- 查看 Bot 信息和绑定状态
+/unbind \\- 解除用户绑定
 /stop \\- 停止推送
 /resume \\- 恢复推送
 /list \\- 列出所有订阅
@@ -410,6 +416,29 @@ ${userBindingStatus}
       console.error('处理 /getme 命令失败:', error);
       await ctx.reply('❌ 获取信息时发生错误');
     }
+  }
+
+  /**
+   * 处理 /unbind 命令
+   */
+  private async handleUnbindCommand(ctx: Context): Promise<void> {
+    const currentChatId = ctx.chat?.id?.toString();
+    const config = await this.dbService.getBaseConfig();
+    
+    // 检查是否是当前绑定的用户
+    if (!config || config.chat_id !== currentChatId) {
+      await ctx.reply('❌ 您当前未绑定到此系统。');
+      return;
+    }
+    
+    // 解除绑定
+    await this.dbService.updateBaseConfig({ 
+      chat_id: '', 
+      bound_user_name: undefined, 
+      bound_user_username: undefined 
+    });
+    
+    await ctx.reply('✅ **绑定已解除**\n\n您将不再接收推送消息。如需重新绑定，请发送 /start 命令。', { parse_mode: 'Markdown' });
   }
 
   /**

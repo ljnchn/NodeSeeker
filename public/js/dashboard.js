@@ -103,6 +103,13 @@ function initEventListeners() {
     // 刷新状态
     document.getElementById('refreshInfoBtn').addEventListener('click', refreshBotInfo);
     
+    // 解除用户绑定 - 使用事件委托
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'unbindUserBtn') {
+            unbindUser();
+        }
+    });
+    
     // 订阅管理
     document.getElementById('addSubForm').addEventListener('submit', handleAddSubscription);
     
@@ -470,8 +477,6 @@ async function testBotConnection() {
     }
 }
 
-
-
 // API 请求封装
 async function apiRequest(url, method = 'GET', data = null) {
     const options = {
@@ -772,6 +777,44 @@ async function refreshBotInfo() {
     } catch (error) {
         console.error('刷新信息失败:', error);
         showMessage('刷新信息失败', 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+// 解除用户绑定
+async function unbindUser() {
+    if (!confirm('确定要解除用户绑定吗？\n\n解除绑定后，将无法接收 Telegram 推送消息。')) {
+        return;
+    }
+
+    const btn = document.getElementById('unbindUserBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-icon">⏳</span>解绑中...';
+    btn.disabled = true;
+
+    try {
+        const response = await apiRequest('/api/telegram/unbind', 'POST');
+        
+        if (response.success) {
+            showMessage('用户绑定已成功解除', 'success');
+            
+            // 重新加载Bot信息以更新状态
+            await loadBotInfo();
+            
+            // 更新配置信息
+            if (currentConfig) {
+                currentConfig.chat_id = '';
+                currentConfig.bound_user_name = '';
+                currentConfig.bound_user_username = '';
+            }
+        } else {
+            showMessage(response.message || '解除用户绑定失败', 'error');
+        }
+    } catch (error) {
+        console.error('解除用户绑定失败:', error);
+        showMessage('解除用户绑定失败', 'error');
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;

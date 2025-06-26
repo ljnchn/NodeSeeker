@@ -241,4 +241,32 @@ const config = getEnvironmentConfig('production');
 4. **系统稳定性**: 提高系统并发处理能力
 5. **可维护性**: 增加性能监控和自动优化能力
 
-这些优化措施为系统的长期稳定运行和用户体验提升奠定了坚实基础。 
+这些优化措施为系统的长期稳定运行和用户体验提升奠定了坚实基础。
+
+## 🆕 最新更新：24小时统计
+
+### 统计范围调整
+根据用户需求，所有统计信息已调整为查询最近24小时的数据：
+
+```sql
+-- 修改前：按日期查询
+WHERE DATE(created_at) = DATE('now')
+
+-- 修改后：查询最近24小时
+WHERE created_at >= datetime('now', '-24 hours')
+```
+
+### 涉及的统计方法
+- `getPostsCount()` - 最近24小时文章总数
+- `getPostsCountByStatus()` - 最近24小时各状态文章数
+- `getSubscriptionsCount()` - 最近24小时创建的订阅数
+- `getTodayPostsCount()` - 最近24小时新增文章数
+- `getTodayMessagesCount()` - 最近24小时推送消息数
+- `getLastUpdateTime()` - 最近24小时内最后更新时间
+
+### 前端显示更新
+- Dashboard页面标签更新为"24小时推送"
+- 统计页面显示"24小时文章数"、"24小时新增"、"24小时推送"
+- 说明文字更新为"最近24小时发送的消息数量"
+
+这样的改动使得统计数据更加实时和准确，反映最近24小时的系统活动情况。 

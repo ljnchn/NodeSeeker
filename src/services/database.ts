@@ -552,13 +552,16 @@ export class DatabaseService {
     }
   }
 
-  // 统计查询方法（使用 COUNT 提高效率和缓存）
+  // 统计查询方法（使用 COUNT 提高效率和缓存）- 改为查询最近24小时数据
   async getPostsCount(): Promise<number> {
     const cacheKey = this.getCacheKey('getPostsCount', []);
     const cached = this.getFromCache<number>(cacheKey);
     if (cached !== null) return cached;
 
-    const result = await this.db.prepare('SELECT COUNT(*) as count FROM posts').first();
+    const result = await this.db.prepare(`
+      SELECT COUNT(*) as count FROM posts 
+      WHERE created_at >= datetime('now', '-24 hours')
+    `).first();
     const count = (result as any)?.count || 0;
     this.setCache(cacheKey, count, 30000); // 30秒缓存
     return count;
@@ -569,8 +572,10 @@ export class DatabaseService {
     const cached = this.getFromCache<number>(cacheKey);
     if (cached !== null) return cached;
 
-    const result = await this.db.prepare('SELECT COUNT(*) as count FROM posts WHERE push_status = ?')
-      .bind(pushStatus).first();
+    const result = await this.db.prepare(`
+      SELECT COUNT(*) as count FROM posts 
+      WHERE push_status = ? AND created_at >= datetime('now', '-24 hours')
+    `).bind(pushStatus).first();
     const count = (result as any)?.count || 0;
     this.setCache(cacheKey, count, 30000); // 30秒缓存
     return count;
@@ -581,7 +586,10 @@ export class DatabaseService {
     const cached = this.getFromCache<number>(cacheKey);
     if (cached !== null) return cached;
 
-    const result = await this.db.prepare('SELECT COUNT(*) as count FROM keywords_sub').first();
+    const result = await this.db.prepare(`
+      SELECT COUNT(*) as count FROM keywords_sub 
+      WHERE created_at >= datetime('now', '-24 hours')
+    `).first();
     const count = (result as any)?.count || 0;
     this.setCache(cacheKey, count, 60000); // 1分钟缓存（关键词变化较少）
     return count;
@@ -590,7 +598,7 @@ export class DatabaseService {
   async getTodayPostsCount(): Promise<number> {
     const result = await this.db.prepare(`
       SELECT COUNT(*) as count FROM posts 
-      WHERE DATE(created_at) = DATE('now')
+      WHERE created_at >= datetime('now', '-24 hours')
     `).first();
     return (result as any)?.count || 0;
   }
@@ -598,7 +606,7 @@ export class DatabaseService {
   async getTodayMessagesCount(): Promise<number> {
     const result = await this.db.prepare(`
       SELECT COUNT(*) as count FROM posts 
-      WHERE push_status = 1 AND DATE(push_date) = DATE('now')
+      WHERE push_status = 1 AND push_date >= datetime('now', '-24 hours')
     `).first();
     return (result as any)?.count || 0;
   }
@@ -614,6 +622,7 @@ export class DatabaseService {
   async getLastUpdateTime(): Promise<string | null> {
     const result = await this.db.prepare(`
       SELECT MAX(created_at) as last_update FROM posts
+      WHERE created_at >= datetime('now', '-24 hours')
     `).first();
     return (result as any)?.last_update || null;
   }

@@ -140,11 +140,11 @@ export const DashboardPage: FC = () => {
 
             <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 style="font-size: 14px; color: #666; margin: 0;">今日推送</h3>
+                <h3 style="font-size: 14px; color: #666; margin: 0;">24小时推送</h3>
                 <span style="font-size: 24px;">📬</span>
               </div>
               <div style="font-size: 24px; font-weight: bold; color: #333;" id="todayMessages">0</div>
-              <p style="font-size: 12px; color: #999; margin: 4px 0 0 0;">今天发送的消息数量</p>
+              <p style="font-size: 12px; color: #999; margin: 4px 0 0 0;">最近24小时发送的消息数量</p>
             </div>
           </div>
 

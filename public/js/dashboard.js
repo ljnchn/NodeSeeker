@@ -618,20 +618,20 @@ function renderStats(stats) {
     
     container.innerHTML = `
         <div class="stat-card">
-            <h3>总订阅数</h3>
+            <h3>活跃订阅数</h3>
             <div class="number">${stats.total_subscriptions || 0}</div>
         </div>
         <div class="stat-card">
-            <h3>总文章数</h3>
+            <h3>24小时文章数</h3>
             <div class="number">${stats.total_posts || 0}</div>
         </div>
         <div class="stat-card">
-            <h3>今日新增</h3>
+            <h3>24小时新增</h3>
             <div class="number">${stats.today_posts || 0}</div>
         </div>
         <div class="stat-card">
-            <h3>推送消息</h3>
-            <div class="number">${stats.total_messages || 0}</div>
+            <h3>24小时推送</h3>
+            <div class="number">${stats.today_messages || 0}</div>
         </div>
     `;
 }

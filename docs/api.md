@@ -309,6 +309,109 @@ POST /api/telegram/webhook
 }
 ```
 
+## Telegram Bot 设置
+
+### 设置 Bot Token（自动配置 Webhook）
+
+```http
+POST /api/telegram/setup-bot
+```
+
+**描述**: 设置 Bot Token，自动验证有效性并配置 Webhook
+
+**请求体**:
+```json
+{
+  "bot_token": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
+}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "Bot Token 设置成功，Webhook 已自动配置",
+  "data": {
+    "bot_info": {
+      "id": 123456789,
+      "username": "your_bot",
+      "first_name": "Your Bot",
+      "is_bot": true
+    },
+    "webhook_url": "https://your-worker.workers.dev/telegram/webhook",
+    "binding_instructions": {
+      "step1": "在 Telegram 中搜索并打开你的 Bot",
+      "step2": "发送 /start 命令给 Bot",
+      "step3": "Bot 将自动保存你的 Chat ID 完成绑定",
+      "bot_username": "@your_bot"
+    }
+  }
+}
+```
+
+### 更新推送设置
+
+```http
+PUT /api/telegram/push-settings
+```
+
+**描述**: 单独更新推送相关设置
+
+**请求体**:
+```json
+{
+  "stop_push": false,
+  "only_title": true
+}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "推送设置更新成功",
+  "data": {
+    "stop_push": false,
+    "only_title": true
+  }
+}
+```
+
+### 获取 Bot 信息和绑定状态
+
+```http
+GET /api/telegram/info
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "获取Bot信息成功",
+  "data": {
+    "bot": {
+      "id": 123456789,
+      "username": "your_bot",
+      "first_name": "Your Bot",
+      "is_bot": true
+    },
+    "bound_user": {
+      "chat_id": "987654321",
+      "name": "用户名",
+      "username": "telegram_username",
+      "display_name": "用户名 (@telegram_username)"
+    },
+    "webhook_status": {
+      "auto_configured": true,
+      "url": "https://your-worker.workers.dev/telegram/webhook"
+    },
+    "binding_instructions": null
+  }
+}
+```
+
+当用户未绑定时，`bound_user` 为 `null`，`binding_instructions` 包含绑定步骤。
+
 ## Telegram Webhook
 
 ### 接收 Telegram 更新

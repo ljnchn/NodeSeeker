@@ -91,14 +91,17 @@ function initEventListeners() {
         window.location.href = '/login';
     });
 
-    // 基础配置表单
-    document.getElementById('botConfigForm').addEventListener('submit', handleConfigSubmit);
+    // Bot Token 设置表单
+    document.getElementById('botTokenForm').addEventListener('submit', handleBotTokenSubmit);
+    
+    // 推送设置表单
+    document.getElementById('pushSettingsForm').addEventListener('submit', handlePushSettingsSubmit);
     
     // 测试 Bot 连接
     document.getElementById('testBotBtn').addEventListener('click', testBotConnection);
     
-    // 设置 Webhook
-    document.getElementById('setWebhookBtn').addEventListener('click', setWebhook);
+    // 刷新状态
+    document.getElementById('refreshInfoBtn').addEventListener('click', refreshBotInfo);
     
     // 订阅管理
     document.getElementById('addSubForm').addEventListener('submit', handleAddSubscription);
@@ -153,52 +156,140 @@ async function loadBotInfo() {
         
         if (response.success) {
             botInfo = response.data;
-            updateBotStatus();
+            updateBotDisplay();
+            updateBindingDisplay();
+        } else {
+            updateBotDisplay(false);
         }
     } catch (error) {
         console.error('加载 Bot 信息失败:', error);
-        updateBotStatus(false);
+        updateBotDisplay(false);
     }
 }
 
-// 更新 Bot 状态显示
-function updateBotStatus(isOnline = true) {
+// 更新 Bot 显示状态
+function updateBotDisplay(hasBot = true) {
+    const botTokenStatus = document.getElementById('botTokenStatus');
+    const botInfoDisplay = document.getElementById('botInfoDisplay');
     const botStatusElement = document.getElementById('botStatus');
     const botDetailElement = document.getElementById('botDetail');
     const botStatusCard = document.getElementById('botStatusCard');
     
-    if (botStatusElement && botDetailElement) {
-        if (isOnline && botInfo) {
+    if (hasBot && botInfo?.bot) {
+        // 更新 Token 状态
+        if (botTokenStatus) {
+            botTokenStatus.textContent = '已配置';
+            botTokenStatus.style.background = '#4caf50';
+        }
+        
+        // 显示 Bot 信息
+        if (botInfoDisplay) {
+            botInfoDisplay.style.display = 'block';
+            document.getElementById('botId').textContent = botInfo.bot.id;
+            document.getElementById('botUsername').textContent = `@${botInfo.bot.username}`;
+            document.getElementById('botName').textContent = botInfo.bot.first_name;
+        }
+        
+        // 更新状态卡片
+        if (botStatusElement && botDetailElement) {
             botStatusElement.textContent = '在线';
             botStatusElement.style.color = '#10b981';
             botDetailElement.textContent = `@${botInfo.bot.first_name || 'Unknown'}`;
-            botStatusCard.style.borderLeft = '4px solid #10b981';
-        } else {
+            if (botStatusCard) {
+                botStatusCard.style.borderLeft = '4px solid #10b981';
+            }
+        }
+    } else {
+        // 未配置状态
+        if (botTokenStatus) {
+            botTokenStatus.textContent = '未配置';
+            botTokenStatus.style.background = '#dc3545';
+        }
+        
+        if (botInfoDisplay) {
+            botInfoDisplay.style.display = 'none';
+        }
+        
+        if (botStatusElement && botDetailElement) {
             botStatusElement.textContent = '离线';
             botStatusElement.style.color = '#ef4444';
-            botDetailElement.textContent = '请检查 Bot Token 配置';
-            botStatusCard.style.borderLeft = '4px solid #ef4444';
+            botDetailElement.textContent = '请配置 Bot Token';
+            if (botStatusCard) {
+                botStatusCard.style.borderLeft = '4px solid #ef4444';
+            }
         }
     }
 }
 
-// 更新绑定用户信息
-function updateBoundUserInfo() {
+// 更新绑定显示状态
+function updateBindingDisplay() {
+    const bindingStatus = document.getElementById('bindingStatus');
+    const bindingInstructions = document.getElementById('bindingInstructions');
+    const boundUserInfo = document.getElementById('boundUserInfo');
     const boundUserElement = document.getElementById('boundUser');
     const userDetailElement = document.getElementById('userDetail');
     const userStatusCard = document.getElementById('userStatusCard');
     
-    if (boundUserElement && userDetailElement) {
-        if (currentConfig.chat_id) {
+    if (botInfo?.bound_user) {
+        // 已绑定状态
+        if (bindingStatus) {
+            bindingStatus.textContent = '已绑定';
+            bindingStatus.style.background = '#4caf50';
+        }
+        
+        if (bindingInstructions) {
+            bindingInstructions.style.display = 'none';
+        }
+        
+        if (boundUserInfo) {
+            boundUserInfo.style.display = 'block';
+            document.getElementById('boundUserName').textContent = botInfo.bound_user.name;
+            document.getElementById('boundUserUsername').textContent = 
+                botInfo.bound_user.username ? `@${botInfo.bound_user.username}` : '无';
+            document.getElementById('boundChatId').textContent = botInfo.bound_user.chat_id;
+        }
+        
+        // 更新状态卡片
+        if (boundUserElement && userDetailElement) {
             boundUserElement.textContent = '已绑定';
             boundUserElement.style.color = '#10b981';
-            userDetailElement.textContent = `Chat ID: ${currentConfig.chat_id}`;
-            userStatusCard.style.borderLeft = '4px solid #10b981';
-        } else {
+            userDetailElement.textContent = botInfo.bound_user.display_name;
+            if (userStatusCard) {
+                userStatusCard.style.borderLeft = '4px solid #10b981';
+            }
+        }
+    } else {
+        // 未绑定状态
+        if (bindingStatus) {
+            bindingStatus.textContent = '未绑定';
+            bindingStatus.style.background = '#dc3545';
+        }
+        
+        // 显示绑定指引
+        if (botInfo?.bot?.username && bindingInstructions) {
+            bindingInstructions.style.display = 'block';
+            const botUsernameLink = document.getElementById('botUsernameLink');
+            if (botUsernameLink) {
+                botUsernameLink.textContent = `@${botInfo.bot.username}`;
+            }
+        } else if (bindingInstructions) {
+            bindingInstructions.style.display = 'none';
+        }
+        
+        if (boundUserInfo) {
+            boundUserInfo.style.display = 'none';
+        }
+        
+        // 更新状态卡片
+        if (boundUserElement && userDetailElement) {
             boundUserElement.textContent = '未绑定';
             boundUserElement.style.color = '#f59e0b';
-            userDetailElement.textContent = '请发送 /start 给 Bot 进行绑定';
-            userStatusCard.style.borderLeft = '4px solid #f59e0b';
+            userDetailElement.textContent = botInfo?.bot?.username ? 
+                `请向 @${botInfo.bot.username} 发送 /start` : 
+                '请先配置 Bot Token';
+            if (userStatusCard) {
+                userStatusCard.style.borderLeft = '4px solid #f59e0b';
+            }
         }
     }
 }
@@ -225,7 +316,7 @@ async function updateStatus() {
         }
         
         // 更新绑定用户信息
-        updateBoundUserInfo();
+        updateBindingDisplay();
         
     } catch (error) {
         console.error('更新状态失败:', error);
@@ -240,7 +331,7 @@ async function loadConfig() {
         if (response.success) {
             currentConfig = response.data;
             populateConfigForm(response.data);
-            updateBoundUserInfo();
+            updateBindingDisplay();
         } else {
             showMessage(response.message || '加载配置失败', 'error');
         }
@@ -252,39 +343,97 @@ async function loadConfig() {
 
 // 填充配置表单
 function populateConfigForm(config) {
-    document.getElementById('botToken').value = config.bot_token || '';
-    document.getElementById('chatId').value = config.chat_id || '';
-    document.getElementById('onlyTitle').checked = config.only_title === 1;
+    // 只填充推送设置表单
     document.getElementById('stopPush').checked = config.stop_push === 1;
+    document.getElementById('onlyTitle').checked = config.only_title === 1;
 }
 
-// 处理配置提交
-async function handleConfigSubmit(e) {
+// 处理 Bot Token 设置
+async function handleBotTokenSubmit(e) {
     e.preventDefault();
-    
+
     const formData = new FormData(e.target);
-    const data = {
-        bot_token: formData.get('botToken'),
-        chat_id: formData.get('chatId'),
-        only_title: formData.get('onlyTitle') === 'on',
-        stop_push: formData.get('stopPush') === 'on'
-    };
+    const botToken = formData.get('botToken');
+
+    if (!botToken.trim()) {
+        showMessage('请输入 Bot Token', 'error');
+        return;
+    }
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="btn-icon">⏳</span>验证中...';
+    submitBtn.disabled = true;
 
     try {
-        const response = await apiRequest('/api/config', 'PUT', data);
-        
+        const response = await apiRequest('/api/telegram/setup-bot', 'POST', {
+            bot_token: botToken
+        });
+
         if (response.success) {
-            currentConfig = response.data;
-            showMessage('配置保存成功', 'success');
-            // 重新加载 Bot 信息
+            showMessage(response.message, 'success');
+            
+            // 清空输入框
+            e.target.reset();
+            
+            // 更新显示
             await loadBotInfo();
-            await updateStatus();
+            
+            // 如果有绑定指引，显示给用户
+            if (response.data.binding_instructions) {
+                const instructions = response.data.binding_instructions;
+                setTimeout(() => {
+                    showMessage(
+                        `Bot 设置成功！请在 Telegram 中搜索 ${instructions.bot_username || '你的 Bot'} 并发送 /start 完成绑定`, 
+                        'info', 
+                        8000
+                    );
+                }, 1000);
+            }
         } else {
-            showMessage(response.message || '保存配置失败', 'error');
+            showMessage(response.message || 'Bot Token 设置失败', 'error');
         }
     } catch (error) {
-        console.error('保存配置失败:', error);
-        showMessage('保存配置失败', 'error');
+        console.error('设置 Bot Token 失败:', error);
+        showMessage('设置 Bot Token 失败', 'error');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// 处理推送设置
+async function handlePushSettingsSubmit(e) {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const stopPush = formData.get('stopPush') === 'on';
+    const onlyTitle = formData.get('onlyTitle') === 'on';
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="btn-icon">⏳</span>保存中...';
+    submitBtn.disabled = true;
+
+    try {
+        const response = await apiRequest('/api/telegram/push-settings', 'PUT', {
+            stop_push: stopPush,
+            only_title: onlyTitle
+        });
+
+        if (response.success) {
+            showMessage(response.message, 'success');
+            currentConfig.stop_push = stopPush ? 1 : 0;
+            currentConfig.only_title = onlyTitle ? 1 : 0;
+        } else {
+            showMessage(response.message || '推送设置更新失败', 'error');
+        }
+    } catch (error) {
+        console.error('更新推送设置失败:', error);
+        showMessage('更新推送设置失败', 'error');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
     }
 }
 
@@ -306,49 +455,22 @@ async function testBotConnection() {
         if (response.success) {
             showMessage('Bot 连接测试成功', 'success');
             botInfo = response.data;
-            updateBotStatus(true);
+            updateBotDisplay(true);
         } else {
             showMessage(response.message || 'Bot 连接测试失败', 'error');
-            updateBotStatus(false);
+            updateBotDisplay(false);
         }
     } catch (error) {
         console.error('测试 Bot 连接失败:', error);
         showMessage('测试 Bot 连接失败', 'error');
-        updateBotStatus(false);
+        updateBotDisplay(false);
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
 
-// 设置 Webhook
-async function setWebhook() {
-    if (!currentConfig.bot_token) {
-        showMessage('请先配置 Bot Token', 'error');
-        return;
-    }
 
-    const btn = document.getElementById('setWebhookBtn');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<span class="btn-icon">⏳</span>设置中...';
-    btn.disabled = true;
-
-    try {
-        const response = await apiRequest('/api/telegram/webhook', 'POST');
-        
-        if (response.success) {
-            showMessage('Webhook 设置成功', 'success');
-        } else {
-            showMessage(response.message || 'Webhook 设置失败', 'error');
-        }
-    } catch (error) {
-        console.error('设置 Webhook 失败:', error);
-        showMessage('设置 Webhook 失败', 'error');
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
-}
 
 // API 请求封装
 async function apiRequest(url, method = 'GET', data = null) {
@@ -374,7 +496,7 @@ async function apiRequest(url, method = 'GET', data = null) {
 }
 
 // 显示消息
-function showMessage(text, type = 'info') {
+function showMessage(text, type = 'info', duration = 5000) {
     const messageEl = document.getElementById('message');
     messageEl.textContent = text;
     messageEl.className = `message ${type}`;
@@ -382,7 +504,7 @@ function showMessage(text, type = 'info') {
     
     setTimeout(() => {
         messageEl.style.display = 'none';
-    }, 5000);
+    }, duration);
 }
 
 // 加载订阅列表
@@ -634,4 +756,24 @@ function renderStats(stats) {
             <div class="number">${stats.today_messages || 0}</div>
         </div>
     `;
+}
+
+// 刷新 Bot 信息
+async function refreshBotInfo() {
+    const btn = document.getElementById('refreshInfoBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-icon">⏳</span>刷新中...';
+    btn.disabled = true;
+
+    try {
+        await loadBotInfo();
+        await loadConfig();
+        showMessage('状态信息已刷新', 'success');
+    } catch (error) {
+        console.error('刷新信息失败:', error);
+        showMessage('刷新信息失败', 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 }

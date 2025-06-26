@@ -167,60 +167,122 @@ export const DashboardPage: FC = () => {
 
             {/* 基础设置内容 */}
             <div id="config" class="tab-content active" style="padding: 30px;">
-              <h2 style="font-size: 20px; margin-bottom: 20px; color: #333;">🤖 Telegram Bot 设置</h2>
+              <h2 style="font-size: 20px; margin-bottom: 30px; color: #333;">🤖 Telegram Bot 设置</h2>
               
-              <form id="botConfigForm" style="display: flex; flex-direction: column; gap: 20px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+              {/* Bot Token 设置区域 */}
+              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #2196f3;">
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: #333; display: flex; align-items: center; gap: 8px;">
+                  🔑 Bot Token 配置
+                  <span id="botTokenStatus" style="font-size: 12px; padding: 4px 8px; border-radius: 12px; background: #dc3545; color: white;">未配置</span>
+                </h3>
+                
+                <form id="botTokenForm" style="display: flex; flex-direction: column; gap: 16px;">
                   <div>
-                    <label for="botToken" style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">🔑 Bot Token</label>
-                    <input 
-                      type="password" 
-                      id="botToken" 
-                      name="botToken" 
-                      placeholder="请输入 Telegram Bot Token"
-                      style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"
-                    />
-                    <p style="font-size: 12px; color: #999; margin-top: 4px;">从 @BotFather 获取 Bot Token</p>
+                    <label for="botToken" style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Bot Token</label>
+                    <div style="display: flex; gap: 12px;">
+                      <input 
+                        type="password" 
+                        id="botToken" 
+                        name="botToken" 
+                        placeholder="请输入从 @BotFather 获取的 Bot Token"
+                        style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;"
+                      />
+                      <button type="submit" style="padding: 12px 24px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; white-space: nowrap;">
+                        💾 保存并验证
+                      </button>
+                    </div>
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">
+                      💡 保存后将自动验证 Token 有效性并设置 Webhook
+                    </p>
+                  </div>
+                </form>
+
+                {/* Bot 信息显示区域 */}
+                <div id="botInfoDisplay" style="display: none; margin-top: 20px; padding: 16px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                  <h4 style="font-size: 14px; margin-bottom: 12px; color: #333;">Bot 信息</h4>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px;">
+                    <div><strong>Bot ID:</strong> <span id="botId">-</span></div>
+                    <div><strong>用户名:</strong> <span id="botUsername">-</span></div>
+                    <div><strong>名称:</strong> <span id="botName">-</span></div>
+                    <div><strong>Webhook:</strong> <span style="color: #4caf50;">✅ 已配置</span></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 用户绑定区域 */}
+              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #ff9800;">
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: #333; display: flex; align-items: center; gap: 8px;">
+                  👥 用户绑定状态
+                  <span id="bindingStatus" style="font-size: 12px; padding: 4px 8px; border-radius: 12px; background: #dc3545; color: white;">未绑定</span>
+                </h3>
+
+                {/* 绑定指引 */}
+                <div id="bindingInstructions" style="display: none;">
+                  <div style="background: #e3f2fd; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
+                    <h4 style="font-size: 14px; margin-bottom: 12px; color: #1976d2;">📋 绑定步骤</h4>
+                    <ol style="margin: 0; padding-left: 20px; color: #555; line-height: 1.6;">
+                      <li>在 Telegram 中搜索 <strong id="botUsernameLink">你的 Bot</strong></li>
+                      <li>点击进入 Bot 对话</li>
+                      <li>发送 <code style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px;">/start</code> 命令</li>
+                      <li>Bot 将自动保存你的信息并完成绑定</li>
+                    </ol>
+                  </div>
+                </div>
+
+                {/* 绑定信息显示 */}
+                <div id="boundUserInfo" style="display: none;">
+                  <div style="background: #e8f5e8; padding: 16px; border-radius: 6px;">
+                    <h4 style="font-size: 14px; margin-bottom: 12px; color: #2e7d32;">✅ 绑定成功</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px;">
+                      <div><strong>用户名:</strong> <span id="boundUserName">-</span></div>
+                      <div><strong>Telegram 用户名:</strong> <span id="boundUserUsername">-</span></div>
+                      <div><strong>Chat ID:</strong> <span id="boundChatId">-</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 推送设置区域 */}
+              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; border-left: 4px solid #9c27b0;margin-bottom: 30px;">
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: #333;">📬 推送设置</h3>
+                
+                <form id="pushSettingsForm" style="display: flex; flex-direction: column; gap: 20px;">
+                  <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                      <input type="checkbox" id="stopPush" name="stopPush" style="margin: 0; transform: scale(1.2);" />
+                      <div>
+                        <div style="font-weight: 500; color: #333;">停止推送</div>
+                        <div style="font-size: 12px; color: #666;">勾选后将暂停所有 Telegram 消息推送</div>
+                      </div>
+                    </label>
+                    
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                      <input type="checkbox" id="onlyTitle" name="onlyTitle" style="margin: 0; transform: scale(1.2);" />
+                      <div>
+                        <div style="font-weight: 500; color: #333;">只匹配标题</div>
+                        <div style="font-size: 12px; color: #666;">勾选后仅在文章标题中搜索关键词，不搜索内容</div>
+                      </div>
+                    </label>
                   </div>
                   
-                  <div>
-                    <label for="chatId" style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">💬 Chat ID</label>
-                    <input 
-                      type="text" 
-                      id="chatId" 
-                      name="chatId" 
-                      placeholder="Telegram Chat ID"
-                      readonly
-                      style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; background: #f9f9f9;"
-                    />
-                    <p style="font-size: 12px; color: #999; margin-top: 4px;">发送 /start 给 Bot 自动获取</p>
-                  </div>
-                </div>
-                
-                <div style="display: flex; flex-direction: column; gap: 16px;">
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="onlyTitle" name="onlyTitle" style="margin: 0;" />
-                    <span style="font-size: 14px; color: #333;">只匹配标题</span>
-                  </label>
-                  
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="stopPush" name="stopPush" style="margin: 0;" />
-                    <span style="font-size: 14px; color: #333;">停止推送</span>
-                  </label>
-                </div>
-                
-                <div style="display: flex; gap: 12px;">
-                  <button type="submit" style="padding: 12px 24px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                    💾 保存设置
+                  <button type="submit" style="padding: 12px 24px; background: #9c27b0; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; align-self: flex-start;">
+                    💾 保存推送设置
                   </button>
-                  <button type="button" id="testBotBtn" style="padding: 12px 24px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                    🔍 测试连接
+                </form>
+              </div>
+
+              {/* 测试区域 */}
+              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; border-left: 4px solid #607d8b;">
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: #333;">🔧 测试工具</h3>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                  <button id="testBotBtn" style="padding: 12px 24px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    🔍 测试 Bot 连接
                   </button>
-                  <button type="button" id="setWebhookBtn" style="padding: 12px 24px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
-                    🔗 设置 Webhook
+                  <button id="refreshInfoBtn" style="padding: 12px 24px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                    🔄 刷新状态
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
 
             {/* 订阅管理内容 */}

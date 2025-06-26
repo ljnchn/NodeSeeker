@@ -5,7 +5,7 @@ import { AuthService } from '../services/auth'
 import { RSSService } from '../services/rss'
 import { TelegramService } from '../services/telegram'
 import { MatcherService } from '../services/matcher'
-import { performanceMonitor } from '../services/performance'
+import { performanceMonitor, withPerformanceMonitoring } from '../services/performance'
 
 type Bindings = {
   DB: D1Database
@@ -81,11 +81,10 @@ apiRoutes.get('/config', async (c) => {
 apiRoutes.put('/config', async (c) => {
   try {
     const body = await c.req.json()
-    const { bot_token, chat_id, stop_push, only_title } = body
+    const { chat_id, stop_push, only_title } = body
     
     const dbService = c.get('dbService')
     const config = await dbService.updateBaseConfig({
-      bot_token,
       chat_id,
       stop_push: stop_push ? 1 : 0,
       only_title: only_title ? 1 : 0
@@ -114,7 +113,122 @@ apiRoutes.put('/config', async (c) => {
   }
 })
 
-// 设置Telegram Webhook
+// 设置 Bot Token（验证并自动设置 Webhook）
+apiRoutes.post('/telegram/setup-bot', async (c) => {
+  const endTimer = performanceMonitor.startTimer('telegram_setup_bot');
+  
+  try {
+    const body = await c.req.json()
+    const { bot_token } = body
+    
+    if (!bot_token) {
+      endTimer(0, false);
+      return c.json({
+        success: false,
+        message: '请提供 Bot Token'
+      }, 400)
+    }
+
+    const dbService = c.get('dbService')
+    
+    // 创建 Telegram 服务实例测试 Token
+    const telegramService = new TelegramService(dbService, bot_token)
+    
+    // 验证 Bot Token
+    const botInfo = await telegramService.getBotInfo()
+    if (!botInfo) {
+      return c.json({
+        success: false,
+        message: 'Bot Token 无效，请检查后重试'
+      }, 400)
+    }
+    
+    // 自动设置 Webhook
+    const webhookUrl = `${c.req.url.split('/api')[0]}/telegram/webhook`
+    const webhookResult = await telegramService.setWebhook(webhookUrl)
+    
+    if (!webhookResult) {
+      return c.json({
+        success: false,
+        message: 'Bot Token 有效，但 Webhook 设置失败'
+      }, 400)
+    }
+    
+    // 保存 Bot Token 到配置
+    const config = await dbService.updateBaseConfig({
+      bot_token
+    })
+    
+    if (!config) {
+      return c.json({
+        success: false,
+        message: '保存 Bot Token 失败'
+      }, 500)
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Bot Token 设置成功，Webhook 已自动配置',
+      data: {
+        bot_info: {
+          id: botInfo.id,
+          username: botInfo.username,
+          first_name: botInfo.first_name,
+          is_bot: botInfo.is_bot
+        },
+        webhook_url: webhookUrl,
+        binding_instructions: {
+          step1: '在 Telegram 中搜索并打开你的 Bot',
+          step2: '发送 /start 命令给 Bot',
+          step3: 'Bot 将自动保存你的 Chat ID 完成绑定',
+          bot_username: botInfo.username ? `@${botInfo.username}` : null
+        }
+      }
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `设置 Bot Token 失败: ${error}`
+    }, 500)
+  }
+})
+
+// 更新推送设置
+apiRoutes.put('/telegram/push-settings', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { stop_push, only_title } = body
+    
+    const dbService = c.get('dbService')
+    const config = await dbService.updateBaseConfig({
+      stop_push: stop_push ? 1 : 0,
+      only_title: only_title ? 1 : 0
+    })
+    
+    if (!config) {
+      return c.json({
+        success: false,
+        message: '更新推送设置失败'
+      }, 500)
+    }
+    
+    return c.json({
+      success: true,
+      message: '推送设置更新成功',
+      data: {
+        stop_push: config.stop_push === 1,
+        only_title: config.only_title === 1
+      }
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `更新推送设置失败: ${error}`
+    }, 500)
+  }
+})
+
+// 手动设置Telegram Webhook
 apiRoutes.post('/telegram/webhook', async (c) => {
   try {
     const body = await c.req.json()
@@ -197,7 +311,7 @@ apiRoutes.get('/telegram/getme', async (c) => {
   }
 })
 
-// 获取Bot信息
+// 获取Bot信息和绑定状态
 apiRoutes.get('/telegram/info', async (c) => {
   try {
     const dbService = c.get('dbService')
@@ -248,7 +362,17 @@ apiRoutes.get('/telegram/info', async (c) => {
           first_name: botInfo.first_name,
           is_bot: botInfo.is_bot
         },
-        bound_user: boundUserInfo
+        bound_user: boundUserInfo,
+        webhook_status: {
+          auto_configured: true,
+          url: `${c.req.url.split('/api')[0]}/telegram/webhook`
+        },
+        binding_instructions: boundUserInfo ? null : {
+          step1: '在 Telegram 中搜索并打开你的 Bot',
+          step2: '发送 /start 命令给 Bot',
+          step3: 'Bot 将自动保存你的 Chat ID 完成绑定',
+          bot_username: botInfo.username ? `@${botInfo.username}` : null
+        }
       }
     })
   } catch (error) {

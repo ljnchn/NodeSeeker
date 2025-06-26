@@ -496,56 +496,6 @@ apiRoutes.post('/telegram/unbind', async (c) => {
   }
 })
 
-// 设置 Bot 命令菜单
-apiRoutes.post('/telegram/set-commands', async (c) => {
-  try {
-    const dbService = c.get('dbService')
-    const config = await dbService.getBaseConfig()
-    
-    if (!config || !config.bot_token) {
-      return c.json({
-        success: false,
-        message: '请先配置Bot Token'
-      }, 400)
-    }
-    
-    const telegramService = new TelegramService(dbService, config.bot_token)
-    
-    // 验证Bot连接
-    const botInfo = await telegramService.getBotInfo()
-    if (!botInfo) {
-      return c.json({
-        success: false,
-        message: '无法连接到Bot，请检查Token是否正确'
-      }, 400)
-    }
-    
-    // 设置命令菜单
-    const result = await telegramService.setBotCommands()
-    
-    if (result) {
-      return c.json({
-        success: true,
-        message: 'Bot 命令菜单设置成功',
-        data: {
-          bot_username: botInfo.username,
-          commands_count: 10
-        }
-      })
-    } else {
-      return c.json({
-        success: false,
-        message: '设置 Bot 命令菜单失败'
-      }, 500)
-    }
-  } catch (error) {
-    return c.json({
-      success: false,
-      message: `设置命令菜单失败: ${error}`
-    }, 500)
-  }
-})
-
 // 获取订阅列表
 apiRoutes.get('/subscriptions', async (c) => {
   try {

@@ -278,26 +278,29 @@ export class TelegramService {
       return;
     }
 
-    let text = '📋 **当前订阅列表：**\n\n';
+    let text = '📋 当前订阅列表\n\n';
     subscriptions.forEach((sub, index) => {
       const keywords = [sub.keyword1, sub.keyword2, sub.keyword3]
         .filter(k => k && k.trim().length > 0);
       
-      text += `${index + 1}\\. **ID:** ${sub.id}\n`;
-      text += `   **关键词：** ${keywords.join(' \\+ ')}\n`;
+      text += `${index + 1}. ID:${sub.id}\n`;
+      
+      if (keywords.length > 0) {
+        text += `🔍 ${keywords.join(' + ')}\n`;
+      }
       
       if (sub.creator) {
-        text += `   👤 **指定作者：** ${sub.creator}\n`;
+        text += `👤 ${sub.creator}\n`;
       }
       
       if (sub.category) {
-        text += `   ${this.getCategoryIcon(sub.category)} **指定分类：** ${sub.category}\n`;
+        text += `${this.getCategoryIcon(sub.category)} ${sub.category}\n`;
       }
       
-      text += `   **创建时间：** ${new Date(sub.created_at || '').toLocaleString('zh-CN')}\n\n`;
+      text += `📅 ${new Date(sub.created_at || '').toLocaleDateString('zh-CN')}\n\n`;
     });
 
-    text += '💡 **提示：** 使用 /delete 订阅ID 删除订阅';
+    text += '💡 使用 /delete 订阅ID 删除订阅';
 
     await ctx.reply(text, { parse_mode: 'Markdown' });
   }
@@ -499,10 +502,12 @@ ${userBindingStatus}
         return false;
       }
 
-      // 构建关键词字符串
-      const keywords = [matchedSub.keyword1, matchedSub.keyword2, matchedSub.keyword3, matchedSub.creator, matchedSub.category]
+      // 构建关键词字符串，如果是creator，加图标，如果是category，加图标
+      const keywords = [matchedSub.keyword1, matchedSub.keyword2, matchedSub.keyword3]
         .filter(k => k && k.trim().length > 0)
         .join(' ');
+      const creator = matchedSub.creator ? `👤${matchedSub.creator}` : '';
+      const category = matchedSub.category ? `${this.getCategoryIcon(matchedSub.category)} ${matchedSub.category}` : '';
 
       // 构建帖子链接
       const postUrl = `https://www.nodeseek.com/post-${post.post_id}-1`;
@@ -514,18 +519,10 @@ ${userBindingStatus}
         .replace(/\(/g, "（")
         .replace(/\)/g, "）");
 
-      // 构建文章信息行
-      const authorInfo = post.creator ? `👤 **${post.creator}**` : '';
-      const categoryInfo = post.category ? `${this.getCategoryIcon(post.category)} **${post.category}**` : '';
-      
-      // 组合作者和分类信息（如果都存在则用分隔符连接）
-      const metaInfo = [authorInfo, categoryInfo].filter(info => info).join(' \\| ');
-
       const text = `
-🎯 **${keywords}**
+🎯 **${keywords} ${creator} ${category}**
 
 📰 **[${title}](${postUrl})**
-${metaInfo ? `\n${metaInfo}` : ''}
       `;
 
       const success = await this.sendMessage(config.chat_id, text);

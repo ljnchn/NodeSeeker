@@ -88,62 +88,109 @@ export class TelegramService {
   }
 
   /**
+   * 验证用户权限
+   */
+  private async checkUserPermission(ctx: Context): Promise<boolean> {
+    const config = await this.dbService.getBaseConfig();
+    if (!config) {
+      return false;
+    }
+
+    const currentChatId = ctx.chat?.id?.toString();
+
+    // 检查是否是绑定的聊天
+    return !!(config.chat_id && config.chat_id === currentChatId);
+  }
+
+  /**
    * 设置命令处理器
    */
   private setupHandlers(): void {
-    // 处理 /start 命令
+    // 处理 /start 命令（特殊处理，不需要权限验证）
     this.bot.command('start', async (ctx) => {
       await this.handleStartCommand(ctx);
     });
 
     // 处理 /stop 命令
     this.bot.command('stop', async (ctx) => {
+      if (!(await this.checkUserPermission(ctx))) {
+        await ctx.reply('❌ 您没有权限使用此功能。请先发送 /start 进行绑定。');
+        return;
+      }
       await this.handleStopCommand(ctx);
     });
 
     // 处理 /resume 命令
     this.bot.command('resume', async (ctx) => {
+      if (!(await this.checkUserPermission(ctx))) {
+        await ctx.reply('❌ 您没有权限使用此功能。请先发送 /start 进行绑定。');
+        return;
+      }
       await this.handleResumeCommand(ctx);
     });
 
     // 处理 /list 命令
     this.bot.command('list', async (ctx) => {
+      if (!(await this.checkUserPermission(ctx))) {
+        await ctx.reply('❌ 您没有权限使用此功能。请先发送 /start 进行绑定。');
+        return;
+      }
       await this.handleListCommand(ctx);
     });
 
     // 处理 /add 命令
     this.bot.command('add', async (ctx) => {
+      if (!(await this.checkUserPermission(ctx))) {
+        await ctx.reply('❌ 您没有权限使用此功能。请先发送 /start 进行绑定。');
+        return;
+      }
       await this.handleAddCommand(ctx);
     });
 
-    // 处理 /delete 命令
-    this.bot.command('delete', async (ctx) => {
+    // 处理 /del 命令
+    this.bot.command('del', async (ctx) => {
+      if (!(await this.checkUserPermission(ctx))) {
+        await ctx.reply('❌ 您没有权限使用此功能。请先发送 /start 进行绑定。');
+        return;
+      }
       await this.handleDeleteCommand(ctx);
     });
 
     // 处理 /post 命令
     this.bot.command('post', async (ctx) => {
+      if (!(await this.checkUserPermission(ctx))) {
+        await ctx.reply('❌ 您没有权限使用此功能。请先发送 /start 进行绑定。');
+        return;
+      }
       await this.handlePostCommand(ctx);
     });
 
-    // 处理 /help 命令
+    // 处理 /help 命令（允许所有人查看）
     this.bot.command('help', async (ctx) => {
       await this.handleHelpCommand(ctx);
     });
 
-    // 处理 /getme 命令
+    // 处理 /getme 命令（允许所有人查看）
     this.bot.command('getme', async (ctx) => {
       await this.handleGetMeCommand(ctx);
     });
 
     // 处理 /unbind 命令
     this.bot.command('unbind', async (ctx) => {
+      if (!(await this.checkUserPermission(ctx))) {
+        await ctx.reply('❌ 您没有权限使用此功能。请先发送 /start 进行绑定。');
+        return;
+      }
       await this.handleUnbindCommand(ctx);
     });
 
     // 处理其他消息
     this.bot.on('message:text', async (ctx) => {
       if (!ctx.message.text.startsWith('/')) {
+        if (!(await this.checkUserPermission(ctx))) {
+          await ctx.reply('❌ 您没有权限使用此功能。请先发送 /start 进行绑定。\n\n发送 /help 查看可用命令。');
+          return;
+        }
         await ctx.reply('请使用命令与我交互。发送 /help 查看可用命令。');
       }
     });
@@ -205,7 +252,7 @@ export class TelegramService {
         { command: 'getme', description: '查看Bot和绑定状态' },
         { command: 'list', description: '查看订阅列表' },
         { command: 'add', description: '添加订阅 (用法: /add 关键词1 关键词2)' },
-        { command: 'delete', description: '删除订阅 (用法: /delete 订阅ID)' },
+        { command: 'del', description: '删除订阅 (用法: /del 订阅ID)' },
         { command: 'post', description: '查看最近文章' },
         { command: 'stop', description: '停止推送' },
         { command: 'resume', description: '恢复推送' },
@@ -240,7 +287,49 @@ export class TelegramService {
     const userFullName = `${user?.first_name || ''}${user?.last_name ? ' ' + user.last_name : ''}`.trim();
     const username = user?.username || '';
 
-    // 更新 chat_id 和用户信息
+    // 检查是否已经有绑定的用户
+    if (config.chat_id && config.chat_id.trim() !== '') {
+      // 如果是已绑定的用户，显示欢迎信息
+      if (config.chat_id === chatId.toString()) {
+        const welcomeText = `
+🎉 **欢迎回来！**
+
+👤 **用户信息：** ${userFullName || '未知用户'}${username ? ` (@${username})` : ''}
+🆔 **Chat ID：** ${chatId}
+
+✅ 您已经绑定到此系统，可以正常使用所有功能。
+
+📋 **可用命令：**
+/help - 查看帮助
+/list - 查看订阅列表
+/add - 添加订阅
+/del - 删除订阅
+/post - 查看最近文章
+/stop - 停止推送
+/resume - 恢复推送
+        `;
+        await ctx.reply(welcomeText, { parse_mode: 'Markdown' });
+        return;
+      } else {
+        // 如果是其他用户尝试绑定，拒绝
+        await ctx.reply(`❌ **绑定失败**
+
+此系统已绑定到其他用户：
+👤 **已绑定用户：** ${config.bound_user_name || '未知'}${config.bound_user_username ? ` (@${config.bound_user_username})` : ''}
+💬 **绑定Chat ID：** ${config.chat_id}
+
+如需更换绑定用户，请：
+1. 使用已绑定的账号发送 /unbind 命令解除绑定
+2. 或联系管理员在网页端解除当前绑定
+
+📋 **当前可用命令：**
+/help - 查看帮助
+/getme - 查看绑定状态`, { parse_mode: 'Markdown' });
+        return;
+      }
+    }
+
+    // 如果没有绑定用户，进行绑定
     await this.dbService.updateBaseConfig({ 
       chat_id: chatId.toString(),
       bound_user_name: userFullName,
@@ -260,7 +349,7 @@ export class TelegramService {
 /help - 查看帮助
 /list - 查看订阅列表
 /add - 添加订阅
-/delete - 删除订阅
+/del - 删除订阅
 /post - 查看最近文章
 /stop - 停止推送
 /resume - 恢复推送
@@ -317,7 +406,7 @@ export class TelegramService {
       
     });
 
-    text += '💡 使用 /delete 订阅ID 删除订阅';
+    text += '💡 使用 /del 订阅ID 删除订阅';
 
     await ctx.reply(text, { parse_mode: 'Markdown' });
   }
@@ -353,13 +442,13 @@ export class TelegramService {
   }
 
   /**
-   * 处理 /delete 命令
+   * 处理 /del 命令
    */
   private async handleDeleteCommand(ctx: Context): Promise<void> {
     const args = ctx.message?.text?.split(' ').slice(1) || [];
     
     if (args.length === 0) {
-      await ctx.reply('❌ 请提供订阅 ID。\n**用法：** /delete 订阅ID', { parse_mode: 'Markdown' });
+      await ctx.reply('❌ 请提供订阅 ID。\n**用法：** /del 订阅ID', { parse_mode: 'Markdown' });
       return;
     }
 
@@ -416,14 +505,14 @@ export class TelegramService {
 /resume \\- 恢复推送
 /list \\- 列出所有订阅
 /add 关键词1 关键词2 关键词3 \\- 添加订阅（最多3个关键词）
-/delete 订阅ID \\- 根据订阅ID删除订阅
+/del 订阅ID \\- 根据订阅ID删除订阅
 /post \\- 查看最近10条文章及推送状态
 /help \\- 显示此帮助信息
 
 💡 **使用说明：**
 \\- 添加订阅后，系统会自动匹配包含关键词的文章
 \\- 可以设置多个关键词，文章需要包含所有关键词才会推送
-\\- 使用 /list 查看订阅ID，然后用 /delete 删除不需要的订阅
+\\- 使用 /list 查看订阅ID，然后用 /del 删除不需要的订阅
 \\- 使用 /getme 查看当前绑定状态和 Bot 详细信息
     `;
 
@@ -448,8 +537,12 @@ export class TelegramService {
       const currentUsername = currentUser?.username || '';
 
       let userBindingStatus = '';
-      if (config?.chat_id && config.chat_id === ctx.chat?.id?.toString()) {
-        userBindingStatus = `✅ **绑定状态：** 已绑定\n👤 **绑定用户：** ${config.bound_user_name || '未知'}${config.bound_user_username ? ` (@${config.bound_user_username})` : ''}`;
+      if (config?.chat_id && config.chat_id.trim() !== '') {
+        if (config.chat_id === ctx.chat?.id?.toString()) {
+          userBindingStatus = `✅ **绑定状态：** 已绑定\n👤 **绑定用户：** ${config.bound_user_name || '未知'}${config.bound_user_username ? ` (@${config.bound_user_username})` : ''}\n💬 **绑定Chat ID：** ${config.chat_id}`;
+        } else {
+          userBindingStatus = `⚠️ **绑定状态：** 已绑定到其他用户\n👤 **绑定用户：** ${config.bound_user_name || '未知'}${config.bound_user_username ? ` (@${config.bound_user_username})` : ''}\n💬 **绑定Chat ID：** ${config.chat_id}`;
+        }
       } else {
         userBindingStatus = '❌ **绑定状态：** 未绑定（发送 /start 进行绑定）';
       }

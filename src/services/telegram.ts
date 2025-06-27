@@ -315,8 +315,6 @@ export class TelegramService {
         await ctx.reply(`❌ **绑定失败**
 
 此系统已绑定到其他用户：
-👤 **已绑定用户：** ${config.bound_user_name || '未知'}${config.bound_user_username ? ` (@${config.bound_user_username})` : ''}
-💬 **绑定Chat ID：** ${config.chat_id}
 
 如需更换绑定用户，请：
 1. 使用已绑定的账号发送 /unbind 命令解除绑定
@@ -541,7 +539,7 @@ export class TelegramService {
         if (config.chat_id === ctx.chat?.id?.toString()) {
           userBindingStatus = `✅ **绑定状态：** 已绑定\n👤 **绑定用户：** ${config.bound_user_name || '未知'}${config.bound_user_username ? ` (@${config.bound_user_username})` : ''}\n💬 **绑定Chat ID：** ${config.chat_id}`;
         } else {
-          userBindingStatus = `⚠️ **绑定状态：** 已绑定到其他用户\n👤 **绑定用户：** ${config.bound_user_name || '未知'}${config.bound_user_username ? ` (@${config.bound_user_username})` : ''}\n💬 **绑定Chat ID：** ${config.chat_id}`;
+          userBindingStatus = `⚠️ **绑定状态：** 已绑定到其他用户`;
         }
       } else {
         userBindingStatus = '❌ **绑定状态：** 未绑定（发送 /start 进行绑定）';
@@ -549,12 +547,6 @@ export class TelegramService {
 
       const text = `
 🤖 **NodeSeek RSS 监控机器人信息**
-
-**Bot 详情：**
-🆔 **Bot ID：** ${botInfo.id}
-👤 **Bot 用户名：** @${botInfo.username}
-📝 **Bot 名称：** ${botInfo.first_name}
-🤖 **是否为机器人：** ${botInfo.is_bot ? '是' : '否'}
 
 **当前用户：**
 👤 **您的名称：** ${currentUserName || '未知'}${currentUsername ? ` (@${currentUsername})` : ''}

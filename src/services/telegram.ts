@@ -500,8 +500,8 @@ ${userBindingStatus}
       const keywords = [matchedSub.keyword1, matchedSub.keyword2, matchedSub.keyword3]
         .filter(k => k && k.trim().length > 0)
         .join(' ');
-      const creator = matchedSub.creator ? `👤${matchedSub.creator}` : '';
-      const category = matchedSub.category ? `${this.getCategoryIcon(matchedSub.category)} ${matchedSub.category}` : '';
+      const creator = matchedSub.creator ? `${matchedSub.creator}👤` : '';
+      const category = matchedSub.category ? `${matchedSub.category}${this.getCategoryIcon(matchedSub.category)}` : '';
 
       // 构建帖子链接
       const postUrl = `https://www.nodeseek.com/post-${post.post_id}-1`;
@@ -516,7 +516,7 @@ ${userBindingStatus}
       const text = `
 🎯 **${keywords} ${creator} ${category}**
 
-📰 **[${title}](${postUrl})**
+**[${title}](${postUrl})**
       `;
 
       const success = await this.sendMessage(config.chat_id, text);

@@ -17,7 +17,7 @@
     "crons": ["*/1 * * * *"]
   },
   "observability": {
-    "enabled": true
+    "enabled": false
   },
 	"assets": {
 		"directory": "./dist",

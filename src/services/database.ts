@@ -352,7 +352,7 @@ export class DatabaseService {
   // 新增：带分页的文章查询
   async getPostsWithPagination(
     page: number = 1, 
-    limit: number = 20, 
+    limit: number = 30, 
     filters?: {
       pushStatus?: number;
       creator?: string;
@@ -424,6 +424,7 @@ export class DatabaseService {
       
       this.db.prepare(`
         SELECT COUNT(*) as count FROM posts 
+        WHERE pub_date >= datetime('now', '-24 hours')
         ${countWhereClause}
       `).bind(...countParams).first()
     ]);
@@ -596,35 +597,49 @@ export class DatabaseService {
   }
 
   async getTodayPostsCount(): Promise<number> {
+    const cacheKey = this.getCacheKey('getTodayPostsCount', []);
+    const cached = this.getFromCache<number>(cacheKey);
+    if (cached !== null) return cached;
     const result = await this.db.prepare(`
       SELECT COUNT(*) as count FROM posts 
       WHERE created_at >= datetime('now', '-24 hours')
     `).first();
-    return (result as any)?.count || 0;
+    const count = (result as any)?.count || 0;
+    this.setCache(cacheKey, count, 60000); // 1分钟缓存
+    return count;
   }
 
   async getTodayMessagesCount(): Promise<number> {
+    const cacheKey = this.getCacheKey('getTodayMessagesCount', []);
+    const cached = this.getFromCache<number>(cacheKey);
+    if (cached !== null) return cached;
     const result = await this.db.prepare(`
       SELECT COUNT(*) as count FROM posts 
       WHERE push_status = 1 AND push_date >= datetime('now', '-24 hours')
     `).first();
-    return (result as any)?.count || 0;
+    const count = (result as any)?.count || 0;
+    this.setCache(cacheKey, count, 60000); // 1分钟缓存
+    return count;
   }
 
   async getPostsCountByDateRange(startDate: string, endDate: string): Promise<number> {
+    const cacheKey = this.getCacheKey('getPostsCountByDateRange', [startDate, endDate]);
+    const cached = this.getFromCache<number>(cacheKey);
+    if (cached !== null) return cached;
     const result = await this.db.prepare(`
       SELECT COUNT(*) as count FROM posts 
       WHERE DATE(pub_date) BETWEEN ? AND ?
     `).bind(startDate, endDate).first();
-    return (result as any)?.count || 0;
+    const count = (result as any)?.count || 0;
+    this.setCache(cacheKey, count, 60000); // 1分钟缓存
+    return count;
   }
 
   async getLastUpdateTime(): Promise<string | null> {
     const result = await this.db.prepare(`
-      SELECT MAX(created_at) as last_update FROM posts
-      WHERE created_at >= datetime('now', '-24 hours')
+      SELECT created_at as last_update FROM posts order by id desc limit 1
     `).first();
-    return (result as any)?.last_update || null;
+    return (result as any)?.last_update || null; // 返回最后更新时间
   }
 
   // 获取综合统计信息

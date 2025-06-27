@@ -69,6 +69,24 @@ export class TelegramService {
     return categoryMap[category] || '📂';
   }
 
+  private getCategoryName(category: string): string {
+    const categoryMap: { [key: string]: string } = {
+      'daily': '日常',
+      'tech': '技术',
+      'info': '情报',
+      'review': '测评',
+      'trade': '交易',
+      'carpool': '拼车',
+      'promotion': '推广',
+      'life': '生活',
+      'dev': 'Dev',
+      'photo': '贴图',
+      'expose': '曝光',
+      'sandbox': '沙盒'
+    };
+    return categoryMap[category] || category;
+  }
+
   /**
    * 设置命令处理器
    */
@@ -294,10 +312,9 @@ export class TelegramService {
       }
       
       if (sub.category) {
-        text += `${this.getCategoryIcon(sub.category)} ${sub.category}\n`;
+        text += `${this.getCategoryIcon(sub.category)} ${this.getCategoryName(sub.category)}\n`;
       }
       
-      text += `📅 ${new Date(sub.created_at || '').toLocaleDateString('zh-CN')}\n\n`;
     });
 
     text += '💡 使用 /delete 订阅ID 删除订阅';
@@ -496,12 +513,14 @@ ${userBindingStatus}
         return false;
       }
 
-      // 构建关键词字符串，如果是creator，加图标，如果是category，加图标
+      // 构建关键词字符串，用markdown格式的标签包裹
       const keywords = [matchedSub.keyword1, matchedSub.keyword2, matchedSub.keyword3]
         .filter(k => k && k.trim().length > 0)
+        .map(k => `**${k}**`)
         .join(' ');
-      const creator = matchedSub.creator ? `${matchedSub.creator}👤` : '';
-      const category = matchedSub.category ? `${matchedSub.category}${this.getCategoryIcon(matchedSub.category)}` : '';
+
+      const creator = matchedSub.creator ? `👤${matchedSub.creator}` : '';
+      const category = matchedSub.category ? `🗂${this.getCategoryName(matchedSub.category)}` : '';
 
       // 构建帖子链接
       const postUrl = `https://www.nodeseek.com/post-${post.post_id}-1`;

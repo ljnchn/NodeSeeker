@@ -474,16 +474,28 @@ async function testBotConnection() {
         
         if (response.success) {
             showMessage('Bot 连接测试成功', 'success');
-            botInfo = response.data;
+            // 将getme接口返回的数据转换为与info接口一致的结构
+            botInfo = {
+                bot: {
+                    id: response.data.id,
+                    username: response.data.username,
+                    first_name: response.data.first_name,
+                    is_bot: response.data.is_bot
+                },
+                bound_user: botInfo?.bound_user || null // 保持原有的绑定用户信息
+            };
             updateBotDisplay(true);
+            updateBindingDisplay(); // 同时更新绑定状态显示
         } else {
             showMessage(response.message || 'Bot 连接测试失败', 'error');
             updateBotDisplay(false);
+            updateBindingDisplay(); // 失败时也更新绑定状态显示
         }
     } catch (error) {
         console.error('测试 Bot 连接失败:', error);
         showMessage('测试 Bot 连接失败', 'error');
         updateBotDisplay(false);
+        updateBindingDisplay(); // 失败时也更新绑定状态显示
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;

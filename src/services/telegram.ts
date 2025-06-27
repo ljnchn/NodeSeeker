@@ -516,11 +516,12 @@ ${userBindingStatus}
       // 构建关键词字符串，用markdown格式的标签包裹
       const keywords = [matchedSub.keyword1, matchedSub.keyword2, matchedSub.keyword3]
         .filter(k => k && k.trim().length > 0)
-        .map(k => `**${k}**`)
         .join(' ');
 
-      const creator = matchedSub.creator ? `👤${matchedSub.creator}` : '';
-      const category = matchedSub.category ? `🗂${this.getCategoryName(matchedSub.category)}` : '';
+      const keywordsStr = keywords ? `🎯 ${keywords}` : '';
+
+      const creator = matchedSub.creator ? `👤 ${matchedSub.creator}` : '';
+      const category = matchedSub.category ? `🗂️ ${this.getCategoryName(matchedSub.category)}` : '';
 
       // 构建帖子链接
       const postUrl = `https://www.nodeseek.com/post-${post.post_id}-1`;
@@ -533,7 +534,7 @@ ${userBindingStatus}
         .replace(/\)/g, "）");
 
       const text = `
-🎯 **${keywords} ${creator} ${category}**
+**${keywordsStr} ${creator} ${category}**
 
 **[${title}](${postUrl})**
       `;

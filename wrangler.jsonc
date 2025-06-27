@@ -14,7 +14,10 @@
     }
   ],
   "triggers": {
-    "crons": ["*/1 * * * *"]
+    "crons": [
+      "*/1 * * * *",
+      "0 0 * * *"
+    ]
   },
   "observability": {
     "enabled": false

@@ -699,4 +699,47 @@ export class DatabaseService {
     }
   }
 
+  /**
+   * 清理24小时以外的所有post数据
+   */
+  async cleanupOldPosts(): Promise<{ deletedCount: number }> {
+    try {
+      // 计算24小时前的时间戳
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
+      console.log(`开始清理 ${twentyFourHoursAgo} 之前的post数据...`);
+      
+      // 先查询要删除的记录数量
+      const countResult = await this.db.prepare(`
+        SELECT COUNT(*) as count FROM posts 
+        WHERE created_at < ?
+      `).bind(twentyFourHoursAgo).first<{ count: number }>();
+      
+      const deletedCount = countResult?.count || 0;
+      
+      if (deletedCount === 0) {
+        console.log('没有需要清理的过期post数据');
+        return { deletedCount: 0 };
+      }
+      
+      // 执行删除操作
+      await this.db.prepare(`
+        DELETE FROM posts 
+        WHERE created_at < ?
+      `).bind(twentyFourHoursAgo).run();
+      
+      // 清理相关缓存
+      this.clearCacheByPattern('posts');
+      this.clearCacheByPattern('getPostsCount');
+      this.clearCacheByPattern('getComprehensiveStats');
+      
+      console.log(`成功清理了 ${deletedCount} 条过期的post数据`);
+      
+      return { deletedCount };
+    } catch (error) {
+      console.error('清理过期post数据失败:', error);
+      throw error;
+    }
+  }
+
 }

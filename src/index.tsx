@@ -63,16 +63,27 @@ app.route('/', pageRoutes)
 export default {
   fetch: app.fetch,
 
-  // 定时任务：每10分钟执行一次RSS抓取和推送
+  // 定时任务处理器
   async scheduled(event: ScheduledEvent, env: Bindings, ctx: ExecutionContext): Promise<void> {
-    console.log('开始执行定时任务...')
+    const cronExpression = event.cron.trim();
+    console.log(`开始执行定时任务，cron: ${cronExpression}`)
 
     try {
       const dbService = new DatabaseService(env.DB)
+      
+      // 判断是否为数据清理任务（每天午夜执行）
+      if (cronExpression === '0 0 * * *') {
+        console.log('执行数据清理任务...')
+        const cleanupResult = await dbService.cleanupOldPosts()
+        console.log(`数据清理完成: 删除了 ${cleanupResult.deletedCount} 条过期记录`)
+        return
+      }
+
+      // RSS抓取和推送任务（每分钟执行）
       const config = await dbService.getBaseConfig()
 
       if (!config || !config.bot_token) {
-        console.log('系统未配置，跳过定时任务')
+        console.log('系统未配置，跳过RSS抓取任务')
         return
       }
 

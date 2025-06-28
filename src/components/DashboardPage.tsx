@@ -32,36 +32,37 @@ export const DashboardPage: FC = () => {
         }
         .subscription-item, .post-item {
           background: white;
-          padding: 20px;
-          margin-bottom: 16px;
-          border-radius: 8px;
+          padding: 14px;
+          margin-bottom: 10px;
+          border-radius: 6px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          border-left: 4px solid #2196f3;
+          border-left: 3px solid #2196f3;
         }
         .subscription-item h4, .post-item h4 {
-          margin-bottom: 12px;
+          margin-bottom: 8px;
           color: #333;
+          font-size: 15px;
         }
         .keywords {
           background: #e3f2fd;
-          padding: 8px 12px;
-          border-radius: 4px;
-          font-size: 14px;
+          padding: 4px 8px;
+          border-radius: 3px;
+          font-size: 12px;
           color: #1976d2;
-          margin-bottom: 8px;
+          margin-bottom: 6px;
         }
         .filters {
-          font-size: 12px;
+          font-size: 11px;
           color: #666;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
         }
         .actions {
           display: flex;
-          gap: 8px;
+          gap: 6px;
         }
                  .empty-state {
            text-align: center;
-           padding: 60px 20px;
+           padding: 40px 20px;
            color: #999;
          }
          .stat-card {

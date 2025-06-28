@@ -712,8 +712,8 @@ export class DatabaseService {
       // 先查询要删除的记录数量
       const countResult = await this.db.prepare(`
         SELECT COUNT(*) as count FROM posts 
-        WHERE created_at < ?
-      `).bind(twentyFourHoursAgo).first<{ count: number }>();
+        WHERE created_at < datetime('now', '-24 hours')
+      `).first<{ count: number }>();
       
       const deletedCount = countResult?.count || 0;
       
@@ -725,8 +725,8 @@ export class DatabaseService {
       // 执行删除操作
       await this.db.prepare(`
         DELETE FROM posts 
-        WHERE created_at < ?
-      `).bind(twentyFourHoursAgo).run();
+        WHERE created_at < datetime('now', '-24 hours')
+      `).run();
       
       // 清理相关缓存
       this.clearCacheByPattern('posts');

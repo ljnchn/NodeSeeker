@@ -588,8 +588,7 @@ export class DatabaseService {
     if (cached !== null) return cached;
 
     const result = await this.db.prepare(`
-      SELECT COUNT(*) as count FROM keywords_sub 
-      WHERE created_at >= datetime('now', '-24 hours')
+      SELECT COUNT(*) as count FROM keywords_sub
     `).first();
     const count = (result as any)?.count || 0;
     this.setCache(cacheKey, count, 60000); // 1分钟缓存（关键词变化较少）

@@ -43,6 +43,33 @@ export const DashboardPage: FC = () => {
           color: #333;
           font-size: 15px;
         }
+        .subscription-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 8px;
+          gap: 12px;
+        }
+        .subscription-title {
+          margin: 0;
+          flex: 1;
+          color: #333;
+          font-size: 15px;
+        }
+        .subscription-delete-btn {
+          padding: 4px 8px;
+          font-size: 12px;
+          background: #f44336;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: background-color 0.2s;
+        }
+        .subscription-delete-btn:hover {
+          background: #d32f2f;
+        }
         .keywords {
           background: #e3f2fd;
           padding: 4px 8px;
@@ -212,89 +239,102 @@ export const DashboardPage: FC = () => {
           }
         }
         
-        @media (max-width: 480px) {
-          .page-header {
-            padding: 12px !important;
-          }
-          
-          .page-header h1 {
-            font-size: 20px !important;
-          }
-          
-          .page-header p {
-            font-size: 13px !important;
-          }
-          
-          .status-grid {
-            grid-template-columns: 1fr !important;
-          }
-          
-          .tab-btn {
-            padding: 10px 12px !important;
-            font-size: 12px !important;
-            min-width: 80px !important;
-          }
-          
-          .tab-content {
-            padding: 15px !important;
-          }
-          
-          .section-header h2 {
-            font-size: 18px !important;
-          }
-          
-          .config-section {
-            padding: 12px !important;
-          }
-          
-          .config-section h3 {
-            font-size: 15px !important;
-          }
-          
-          .form-grid {
-            gap: 12px !important;
-          }
-          
-          .form-grid input, .form-grid select {
-            padding: 10px !important;
-            font-size: 14px !important;
-          }
-          
-          .subscription-item, .post-item {
-            padding: 12px !important;
-            margin-bottom: 8px !important;
-          }
-          
-          .subscription-item h4, .post-item h4 {
-            font-size: 14px !important;
-          }
-          
-          .actions {
-            flex-wrap: wrap !important;
-            gap: 4px !important;
-          }
-          
-          .actions button {
-            font-size: 11px !important;
-            padding: 4px 8px !important;
-          }
-          
-          .stats-grid {
-            gap: 12px !important;
-          }
-          
-          .stat-card {
-            padding: 16px !important;
-          }
-          
-          .stat-card h3 {
-            font-size: 12px !important;
-          }
-          
-          .stat-card .number {
-            font-size: 24px !important;
-          }
-        }
+                 @media (max-width: 480px) {
+           .page-header {
+             padding: 12px !important;
+           }
+           
+           .page-header h1 {
+             font-size: 20px !important;
+           }
+           
+           .page-header p {
+             font-size: 13px !important;
+           }
+           
+           .status-grid {
+             grid-template-columns: 1fr !important;
+           }
+           
+           .tab-btn {
+             padding: 10px 12px !important;
+             font-size: 12px !important;
+             min-width: 80px !important;
+           }
+           
+           .tab-content {
+             padding: 15px !important;
+           }
+           
+           .section-header h2 {
+             font-size: 18px !important;
+           }
+           
+           .config-section {
+             padding: 12px !important;
+           }
+           
+           .config-section h3 {
+             font-size: 15px !important;
+           }
+           
+           .form-grid {
+             gap: 12px !important;
+           }
+           
+           .form-grid input, .form-grid select {
+             padding: 10px !important;
+             font-size: 14px !important;
+           }
+           
+           .subscription-item, .post-item {
+             padding: 12px !important;
+             margin-bottom: 8px !important;
+           }
+           
+           .subscription-header {
+             gap: 8px !important;
+           }
+           
+           .subscription-title {
+             font-size: 14px !important;
+           }
+           
+           .subscription-delete-btn {
+             padding: 6px 8px !important;
+             font-size: 11px !important;
+           }
+           
+           .subscription-item h4, .post-item h4 {
+             font-size: 14px !important;
+           }
+           
+           .actions {
+             flex-wrap: wrap !important;
+             gap: 4px !important;
+           }
+           
+           .actions button {
+             font-size: 11px !important;
+             padding: 4px 8px !important;
+           }
+           
+           .stats-grid {
+             gap: 12px !important;
+           }
+           
+           .stat-card {
+             padding: 16px !important;
+           }
+           
+           .stat-card h3 {
+             font-size: 12px !important;
+           }
+           
+           .stat-card .number {
+             font-size: 24px !important;
+           }
+         }
         `}
       </style>
       

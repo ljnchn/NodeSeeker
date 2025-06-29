@@ -590,7 +590,12 @@ function renderSubscriptions(subscriptions) {
         
         return `
             <div class="subscription-item">
-                <h4>订阅 #${sub.id}</h4>
+                <div class="subscription-header">
+                    <h4 class="subscription-title">订阅 #${sub.id}</h4>
+                    <button class="subscription-delete-btn" onclick="deleteSubscription(${sub.id})">
+                        🗑️ 删除
+                    </button>
+                </div>
                 ${hasKeywords ? `
                     <div class="keywords">
                         ${keywords.join(' + ')}
@@ -600,12 +605,6 @@ function renderSubscriptions(subscriptions) {
                     ${sub.creator ? `<span>👤 创建者: ${sub.creator}</span>` : ''}
                     ${sub.category ? `<span>📂 分类: ${categoryMap[sub.category] || sub.category}</span>` : ''}
                     ${!hasKeywords && !sub.creator && !sub.category ? '<span style="color: #999;">无筛选条件</span>' : ''}
-                </div>
-                <div class="actions">
-                    <button class="btn btn-danger" onclick="deleteSubscription(${sub.id})">
-                        <span class="btn-icon">🗑️</span>
-                        删除
-                    </button>
                 </div>
             </div>
         `;

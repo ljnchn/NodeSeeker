@@ -500,9 +500,7 @@ export const DashboardPage: FC = () => {
 
               {/* 推送设置区域 */}
               <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; border-left: 4px solid #9c27b0;margin-bottom: 30px; min-height: 200px;" class="config-section" id="pushSettingsSection">
-                <h3 style="font-size: 16px; margin-bottom: 16px; color: #333;">📬 推送设置 
-                  <span style="background: #ff4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">DEBUG: 可见</span>
-                </h3>
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: #333;">📬 推送设置</h3>
                 
                 <form id="pushSettingsForm" style="display: flex !important; flex-direction: column; gap: 20px;" class="push-settings-form">
                   <div style="display: flex; flex-direction: column; gap: 16px;">

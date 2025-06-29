@@ -215,8 +215,16 @@ export class DatabaseService {
 
   // 基础配置相关操作
   async getBaseConfig(): Promise<BaseConfig | null> {
+    const cacheKey = this.getCacheKey('getBaseConfig', []);
+    const cached = this.getFromCache<BaseConfig | null>(cacheKey);
+    if (cached !== null) return cached;
+
     const result = await this.db.prepare('SELECT * FROM base_config LIMIT 1').first();
-    return result as BaseConfig | null;
+    const config = result as BaseConfig | null;
+    
+    // 缓存120秒，配置变化不频繁
+    this.setCache(cacheKey, config, 120000);
+    return config;
   }
 
   async createBaseConfig(config: Omit<BaseConfig, 'id' | 'created_at' | 'updated_at'>): Promise<BaseConfig> {
@@ -234,6 +242,9 @@ export class DatabaseService {
       config.stop_push,
       config.only_title
     ).first();
+    
+    // 清理相关缓存
+    this.clearCacheByPattern('BaseConfig');
     
     return result as unknown as BaseConfig;
   }
@@ -288,6 +299,9 @@ export class DatabaseService {
       RETURNING *
     `).bind(...values).first();
 
+    // 清理相关缓存
+    this.clearCacheByPattern('BaseConfig');
+
     return result as BaseConfig | null;
   }
 
@@ -316,9 +330,68 @@ export class DatabaseService {
     return result as unknown as Post;
   }
 
+  /**
+   * 批量创建文章
+   */
+  async batchCreatePosts(posts: Array<Omit<Post, 'id' | 'created_at'>>): Promise<number> {
+    if (posts.length === 0) {
+      return 0;
+    }
+
+    // 使用事务进行批量插入
+    const statements = posts.map(post => 
+      this.db.prepare(`
+        INSERT INTO posts (post_id, title, memo, category, creator, push_status, sub_id, pub_date, push_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        post.post_id,
+        post.title,
+        post.memo,
+        post.category,
+        post.creator,
+        post.push_status,
+        post.sub_id || null,
+        post.pub_date,
+        post.push_date || null
+      )
+    );
+
+    const results = await this.db.batch(statements);
+    
+    // 清除相关缓存
+    this.clearCacheByPattern('posts');
+    this.clearCacheByPattern('Stats');
+    
+    // 统计成功插入的数量
+    return results.filter(result => result.success).length;
+  }
+
   async getPostByPostId(postId: number): Promise<Post | null> {
     const result = await this.db.prepare('SELECT * FROM posts WHERE post_id = ?').bind(postId).first();
     return result as Post | null;
+  }
+
+  /**
+   * 批量查询文章，根据 post_id 数组
+   */
+  async getPostsByPostIds(postIds: number[]): Promise<Map<number, Post>> {
+    if (postIds.length === 0) {
+      return new Map();
+    }
+
+    // 构建 IN 查询的占位符
+    const placeholders = postIds.map(() => '?').join(',');
+    const query = `SELECT * FROM posts WHERE post_id IN (${placeholders})`;
+    
+    const result = await this.db.prepare(query).bind(...postIds).all();
+    
+    // 将结果转换为 Map，以 post_id 为键
+    const postMap = new Map<number, Post>();
+    (result.results as unknown as Post[]).forEach(post => {
+      postMap.set(post.post_id, post);
+    });
+    
+    return postMap;
   }
 
   async updatePostPushStatus(postId: number, pushStatus: number, subId?: number, pushDate?: string): Promise<void> {
@@ -483,16 +556,33 @@ export class DatabaseService {
       sub.category || null
     ).first();
 
+    // 清理相关缓存
+    this.clearCacheByPattern('KeywordSubs');
+    this.clearCacheByPattern('Subscriptions');
+
     return result as unknown as KeywordSub;
   }
 
   async getAllKeywordSubs(): Promise<KeywordSub[]> {
+    const cacheKey = this.getCacheKey('getAllKeywordSubs', []);
+    const cached = this.getFromCache<KeywordSub[]>(cacheKey);
+    if (cached !== null) return cached;
+
     const result = await this.db.prepare('SELECT * FROM keywords_sub ORDER BY created_at DESC').all();
-    return result.results as unknown as KeywordSub[];
+    const subscriptions = result.results as unknown as KeywordSub[];
+    
+    // 缓存60秒，因为订阅变化不频繁
+    this.setCache(cacheKey, subscriptions, 60000);
+    return subscriptions;
   }
 
   async deleteKeywordSub(id: number): Promise<boolean> {
     const result = await this.db.prepare('DELETE FROM keywords_sub WHERE id = ?').bind(id).run();
+    
+    // 清理相关缓存
+    this.clearCacheByPattern('KeywordSubs');
+    this.clearCacheByPattern('Subscriptions');
+    
     return result.meta.changes > 0;
   }
 

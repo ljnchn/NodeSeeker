@@ -203,7 +203,7 @@ export class RSSService {
   }
 
   /**
-   * 处理新的 RSS 数据
+   * 处理新的 RSS 数据 - 优化版本，批量查询减少数据库访问
    */
   async processNewRSSData(): Promise<{ processed: number; new: number; errors: number }> {
     try {
@@ -212,6 +212,10 @@ export class RSSService {
       let processed = 0;
       let newPosts = 0;
       let errors = 0;
+
+      // 第一步：批量解析所有RSS项目
+      const parsedPosts: ParsedPost[] = [];
+      const postIds: number[] = [];
 
       for (const item of rssItems) {
         try {
@@ -223,26 +227,52 @@ export class RSSService {
             continue;
           }
 
-          // 检查是否已存在
-          const existingPost = await this.dbService.getPostByPostId(parsedPost.post_id);
-          if (existingPost) {
-            console.log(`文章已存在: ${parsedPost.post_id}`);
-            continue;
-          }
-
-          // 创建新文章
-          await this.dbService.createPost({
-            ...parsedPost,
-            push_status: 0 // 默认未推送
-          });
-
-          newPosts++;
-          console.log(`新增文章: ${parsedPost.title} (ID: ${parsedPost.post_id})`);
+          parsedPosts.push(parsedPost);
+          postIds.push(parsedPost.post_id);
           
         } catch (error) {
           errors++;
-          console.error('处理单条 RSS 数据失败:', error);
+          console.error('解析单条 RSS 数据失败:', error);
         }
+      }
+
+      // 第二步：批量查询已存在的文章
+      const existingPosts = await this.dbService.getPostsByPostIds(postIds);
+      console.log(`批量查询完成: 找到 ${existingPosts.size} 个已存在的文章`);
+
+      // 第三步：筛选出需要创建的新文章
+      const newPostsToCreate = parsedPosts.filter(parsedPost => {
+        if (existingPosts.has(parsedPost.post_id)) {
+          console.log(`文章已存在: ${parsedPost.post_id}`);
+          return false;
+        }
+        return true;
+      });
+
+      // 第四步：批量创建新文章
+      if (newPostsToCreate.length > 0) {
+        try {
+          const postsWithDefaults = newPostsToCreate.map(post => ({
+            ...post,
+            push_status: 0 // 默认未推送
+          }));
+
+          const createdCount = await this.dbService.batchCreatePosts(postsWithDefaults);
+          newPosts = createdCount;
+
+          console.log(`批量创建完成: 成功创建 ${createdCount} 篇新文章`);
+          
+          // 记录创建的文章详情
+          newPostsToCreate.forEach(post => {
+            console.log(`新增文章: ${post.title} (ID: ${post.post_id})`);
+          });
+          
+        } catch (error) {
+          errors += newPostsToCreate.length;
+          console.error('批量创建文章失败:', error);
+        }
+      } else {
+        console.log('没有新文章需要创建');
       }
 
       console.log(`RSS 处理完成: 处理 ${processed} 条，新增 ${newPosts} 条，错误 ${errors} 条`);

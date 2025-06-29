@@ -47,6 +47,13 @@ export class MatcherService {
       return [];
     }
 
+    return this.checkPostMatchesWithData(post, subscriptions, config);
+  }
+
+  /**
+   * 检查文章是否匹配任何订阅 - 带缓存数据版本
+   */
+  private checkPostMatchesWithData(post: Post, subscriptions: KeywordSub[], config: BaseConfig): MatchResult[] {
     const results: MatchResult[] = [];
 
     // 预处理文章内容以提高匹配性能
@@ -217,10 +224,15 @@ export class MatcherService {
   }
 
   /**
-   * 处理未推送的文章
+   * 处理未推送的文章 - 优化版本，减少重复查询和批量更新
    */
   async processUnpushedPosts(): Promise<PushResult> {
-    const config = await this.dbService.getBaseConfig();
+    // 第一步：并发获取所有需要的数据
+    const [config, unpushedPosts, subscriptions] = await Promise.all([
+      this.dbService.getBaseConfig(),
+      this.dbService.getUnpushedPosts(),
+      this.dbService.getAllKeywordSubs()
+    ]);
     
     if (!config) {
       return {
@@ -243,7 +255,6 @@ export class MatcherService {
       };
     }
 
-    const unpushedPosts = await this.dbService.getUnpushedPosts();
     console.log(`找到 ${unpushedPosts.length} 篇未推送文章`);
 
     const result: PushResult = {
@@ -254,15 +265,29 @@ export class MatcherService {
       details: []
     };
 
+    // 第二步：收集所有需要批量更新的操作
+    const batchUpdates: Array<{
+      postId: number;
+      pushStatus: number;
+      subId?: number;
+      pushDate?: string;
+    }> = [];
+
+    // 第三步：处理每篇文章
     for (const post of unpushedPosts) {
       result.processed++;
       
       try {
-        const matches = await this.checkPostMatches(post);
+        // 使用缓存的数据进行匹配检查
+        const matches = this.checkPostMatchesWithData(post, subscriptions, config);
         
         if (matches.length === 0) {
-          // 没有匹配，标记为无需推送
-          await this.dbService.updatePostPushStatus(post.post_id, 2); // 2 = 无需推送
+          // 没有匹配，收集到批量更新中
+          batchUpdates.push({
+            postId: post.post_id,
+            pushStatus: 2 // 2 = 无需推送
+          });
+          
           result.skipped++;
           result.details.push({
             postId: post.post_id,
@@ -296,7 +321,10 @@ export class MatcherService {
             status: 'pushed'
           });
           console.log(`成功推送文章: ${post.title}`);
+          
+          // 注意：pushPost 方法内部已经更新了状态，这里不需要再次更新
         } else {
+          // 推送失败，收集到批量更新中（保持未推送状态，下次再试）
           result.errors++;
           result.details.push({
             postId: post.post_id,
@@ -321,6 +349,17 @@ export class MatcherService {
           reason: `处理异常: ${error}`
         });
         console.error(`处理文章失败: ${post.title}`, error);
+      }
+    }
+
+    // 第四步：批量更新数据库状态
+    if (batchUpdates.length > 0) {
+      try {
+        await this.dbService.batchUpdatePostPushStatus(batchUpdates);
+        console.log(`批量更新完成: ${batchUpdates.length} 条记录`);
+      } catch (error) {
+        console.error('批量更新状态失败:', error);
+        // 这里可以选择是否要回退统计结果
       }
     }
 

@@ -60,37 +60,248 @@ export const DashboardPage: FC = () => {
           display: flex;
           gap: 6px;
         }
-                 .empty-state {
-           text-align: center;
-           padding: 40px 20px;
-           color: #999;
-         }
-         .stat-card {
-           background: white;
-           padding: 24px;
-           border-radius: 8px;
-           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-           text-align: center;
-           border-left: 4px solid #4caf50;
-         }
-         .stat-card h3 {
-           font-size: 14px;
-           color: #666;
-           margin-bottom: 12px;
-           font-weight: 500;
-         }
-         .stat-card .number {
-           font-size: 28px;
-           font-weight: bold;
-           color: #333;
-         }
+        .empty-state {
+          text-align: center;
+          padding: 40px 20px;
+          color: #999;
+        }
+        .stat-card {
+          background: white;
+          padding: 24px;
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          text-align: center;
+          border-left: 4px solid #4caf50;
+        }
+        .stat-card h3 {
+          font-size: 14px;
+          color: #666;
+          margin-bottom: 12px;
+          font-weight: 500;
+        }
+        .stat-card .number {
+          font-size: 28px;
+          font-weight: bold;
+          color: #333;
+        }
+        
+        /* 移动端优化样式 */
+        @media (max-width: 768px) {
+          .dashboard-container {
+            padding: 10px !important;
+          }
+          
+          .page-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 16px !important;
+            padding: 16px !important;
+          }
+          
+          .page-header h1 {
+            font-size: 22px !important;
+          }
+          
+          .page-header p {
+            font-size: 14px !important;
+          }
+          
+          .header-actions {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            width: 100% !important;
+          }
+          
+          .status-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 12px !important;
+          }
+          
+          .tab-nav {
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+          
+          .tab-buttons {
+            display: flex !important;
+            min-width: max-content !important;
+            gap: 0 !important;
+          }
+          
+          .tab-btn {
+            padding: 12px 16px !important;
+            font-size: 13px !important;
+            min-width: 100px !important;
+            white-space: nowrap !important;
+          }
+          
+          .tab-content {
+            padding: 20px !important;
+          }
+          
+          .section-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 12px !important;
+          }
+          
+          .section-actions {
+            flex-direction: column !important;
+            width: 100% !important;
+          }
+          
+          .section-actions button {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+          
+          .form-grid {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+          }
+          
+          .config-section {
+            padding: 16px !important;
+            margin-bottom: 16px !important;
+          }
+          
+          .bot-token-form {
+            flex-direction: column !important;
+            gap: 12px !important;
+          }
+          
+          .bot-token-form input {
+            margin-bottom: 8px !important;
+          }
+          
+          .bot-token-form button {
+            width: 100% !important;
+          }
+          
+          .bot-info-grid {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          
+          .binding-instructions ol {
+            padding-left: 16px !important;
+          }
+          
+          .push-settings-form {
+            gap: 16px !important;
+          }
+          
+          .checkbox-label {
+            padding: 12px !important;
+            font-size: 14px !important;
+          }
+          
+          .test-buttons {
+            flex-direction: column !important;
+            gap: 8px !important;
+          }
+          
+          .test-buttons button {
+            width: 100% !important;
+            font-size: 14px !important;
+          }
+          
+          .stats-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 16px !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .page-header {
+            padding: 12px !important;
+          }
+          
+          .page-header h1 {
+            font-size: 20px !important;
+          }
+          
+          .page-header p {
+            font-size: 13px !important;
+          }
+          
+          .status-grid {
+            grid-template-columns: 1fr !important;
+          }
+          
+          .tab-btn {
+            padding: 10px 12px !important;
+            font-size: 12px !important;
+            min-width: 80px !important;
+          }
+          
+          .tab-content {
+            padding: 15px !important;
+          }
+          
+          .section-header h2 {
+            font-size: 18px !important;
+          }
+          
+          .config-section {
+            padding: 12px !important;
+          }
+          
+          .config-section h3 {
+            font-size: 15px !important;
+          }
+          
+          .form-grid {
+            gap: 12px !important;
+          }
+          
+          .form-grid input, .form-grid select {
+            padding: 10px !important;
+            font-size: 14px !important;
+          }
+          
+          .subscription-item, .post-item {
+            padding: 12px !important;
+            margin-bottom: 8px !important;
+          }
+          
+          .subscription-item h4, .post-item h4 {
+            font-size: 14px !important;
+          }
+          
+          .actions {
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+          }
+          
+          .actions button {
+            font-size: 11px !important;
+            padding: 4px 8px !important;
+          }
+          
+          .stats-grid {
+            gap: 12px !important;
+          }
+          
+          .stat-card {
+            padding: 16px !important;
+          }
+          
+          .stat-card h3 {
+            font-size: 12px !important;
+          }
+          
+          .stat-card .number {
+            font-size: 24px !important;
+          }
+        }
         `}
       </style>
       
-      <div style="min-height: 100vh; background: #f5f5f5; padding: 20px;">
+      <div style="min-height: 100vh; background: #f5f5f5; padding: 20px;" class="dashboard-container">
         <div style="max-width: 1200px; margin: 0 auto;">
           {/* 页面头部 */}
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" class="page-header">
             <div>
               <h1 style="font-size: 28px; font-weight: bold; color: #333; margin-bottom: 8px;">
                 📡 NodeSeek RSS 监控控制台
@@ -99,7 +310,7 @@ export const DashboardPage: FC = () => {
                 智能文章监控与推送系统
               </p>
             </div>
-            <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 16px;" class="header-actions">
               <span style="color: #666; font-size: 14px;">管理员已登录</span>
               <button id="logoutBtn" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
                 退出登录
@@ -111,7 +322,7 @@ export const DashboardPage: FC = () => {
           <div id="message" style="display: none; margin-bottom: 20px; padding: 12px; border-radius: 6px;"></div>
 
           {/* 状态卡片 */}
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;" class="status-grid">
             <div id="botStatusCard" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid #999;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <h3 style="font-size: 14px; color: #666; margin: 0;">Bot 状态</h3>
@@ -150,8 +361,8 @@ export const DashboardPage: FC = () => {
           </div>
 
           {/* 标签页导航 */}
-          <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
-            <div style="display: flex; border-bottom: 1px solid #eee;">
+          <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;" class="tab-nav">
+            <div style="display: flex; border-bottom: 1px solid #eee;" class="tab-buttons">
               <button class="tab-btn active" data-tab="config" style="padding: 16px 24px; border: none; background: #2196f3; color: white; cursor: pointer; font-size: 14px;">
                 ⚙️ 基础设置
               </button>
@@ -171,7 +382,7 @@ export const DashboardPage: FC = () => {
               <h2 style="font-size: 20px; margin-bottom: 30px; color: #333;">🤖 Telegram Bot 设置</h2>
               
               {/* Bot Token 设置区域 */}
-              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #2196f3;">
+              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #2196f3;" class="config-section">
                 <h3 style="font-size: 16px; margin-bottom: 16px; color: #333; display: flex; align-items: center; gap: 8px;">
                   🔑 Bot Token 配置
                   <span id="botTokenStatus" style="font-size: 12px; padding: 4px 8px; border-radius: 12px; background: #dc3545; color: white;">未配置</span>
@@ -180,7 +391,7 @@ export const DashboardPage: FC = () => {
                 <form id="botTokenForm" style="display: flex; flex-direction: column; gap: 16px;">
                   <div>
                     <label for="botToken" style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Bot Token</label>
-                    <div style="display: flex; gap: 12px;">
+                    <div style="display: flex; gap: 12px;" class="bot-token-form">
                       <input 
                         type="password" 
                         id="botToken" 
@@ -201,7 +412,7 @@ export const DashboardPage: FC = () => {
                 {/* Bot 信息显示区域 */}
                 <div id="botInfoDisplay" style="display: none; margin-top: 20px; padding: 16px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
                   <h4 style="font-size: 14px; margin-bottom: 12px; color: #333;">Bot 信息</h4>
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px;">
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; font-size: 14px;" class="bot-info-grid">
                     <div><strong>Bot ID:</strong> <span id="botId">-</span></div>
                     <div><strong>用户名:</strong> <span id="botUsername">-</span></div>
                     <div><strong>名称:</strong> <span id="botName">-</span></div>
@@ -212,14 +423,14 @@ export const DashboardPage: FC = () => {
               </div>
 
               {/* 用户绑定区域 */}
-              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #ff9800;">
+              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid #ff9800;" class="config-section">
                 <h3 style="font-size: 16px; margin-bottom: 16px; color: #333; display: flex; align-items: center; gap: 8px;">
                   👥 用户绑定状态
                   <span id="bindingStatus" style="font-size: 12px; padding: 4px 8px; border-radius: 12px; background: #dc3545; color: white;">未绑定</span>
                 </h3>
 
                 {/* 绑定指引 */}
-                <div id="bindingInstructions" style="display: none;">
+                <div id="bindingInstructions" style="display: none;" class="binding-instructions">
                   <div style="background: #e3f2fd; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
                     <h4 style="font-size: 14px; margin-bottom: 12px; color: #1976d2;">📋 绑定步骤</h4>
                     <ol style="margin: 0; padding-left: 20px; color: #555; line-height: 1.6;">
@@ -248,12 +459,12 @@ export const DashboardPage: FC = () => {
               </div>
 
               {/* 推送设置区域 */}
-              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; border-left: 4px solid #9c27b0;margin-bottom: 30px;">
+              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; border-left: 4px solid #9c27b0;margin-bottom: 30px;" class="config-section">
                 <h3 style="font-size: 16px; margin-bottom: 16px; color: #333;">📬 推送设置</h3>
                 
-                <form id="pushSettingsForm" style="display: flex; flex-direction: column; gap: 20px;">
+                <form id="pushSettingsForm" style="display: flex; flex-direction: column; gap: 20px;" class="push-settings-form">
                   <div style="display: flex; flex-direction: column; gap: 16px;">
-                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;" class="checkbox-label">
                       <input type="checkbox" id="stopPush" name="stopPush" style="margin: 0; transform: scale(1.2);" />
                       <div>
                         <div style="font-weight: 500; color: #333;">停止推送</div>
@@ -261,7 +472,7 @@ export const DashboardPage: FC = () => {
                       </div>
                     </label>
                     
-                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;">
+                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;" class="checkbox-label">
                       <input type="checkbox" id="onlyTitle" name="onlyTitle" style="margin: 0; transform: scale(1.2);" />
                       <div>
                         <div style="font-weight: 500; color: #333;">只匹配标题</div>
@@ -277,9 +488,9 @@ export const DashboardPage: FC = () => {
               </div>
 
               {/* 测试区域 */}
-              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; border-left: 4px solid #607d8b;">
+              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; border-left: 4px solid #607d8b;" class="config-section">
                 <h3 style="font-size: 16px; margin-bottom: 16px; color: #333;">🔧 测试工具</h3>
-                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;" class="test-buttons">
                   <button id="testBotBtn" style="padding: 12px 24px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
                     🔍 测试 Bot 连接
                   </button>
@@ -295,14 +506,16 @@ export const DashboardPage: FC = () => {
 
             {/* 订阅管理内容 */}
             <div id="subscriptions" class="tab-content" style="padding: 30px; display: none;">
-              <h2 style="font-size: 20px; margin-bottom: 20px; color: #333;">📝 订阅管理</h2>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" class="section-header">
+                <h2 style="font-size: 20px; color: #333; margin: 0;">📝 订阅管理</h2>
+              </div>
               
-              <form id="addSubForm" style="margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+              <form id="addSubForm" style="margin-bottom: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px;" class="config-section">
                 <h3 style="font-size: 16px; margin-bottom: 16px; color: #333;">添加新订阅</h3>
                 <p style="font-size: 14px; color: #666; margin-bottom: 16px;">
                   💡 提示：至少需要填写一个关键词，或者选择创建者/分类进行监控
                 </p>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;" class="form-grid">
                   <div>
                     <label for="keyword1" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">关键词1</label>
                     <input type="text" id="keyword1" name="keyword1" placeholder="输入关键词" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />
@@ -352,14 +565,17 @@ export const DashboardPage: FC = () => {
 
             {/* 文章列表内容 */}
             <div id="posts" class="tab-content" style="padding: 30px; display: none;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" class="section-header">
                 <h2 style="font-size: 20px; color: #333; margin: 0;">📰 文章列表</h2>
-                <div style="display: flex; gap: 12px;">
+                <div style="display: flex; gap: 12px;" class="section-actions">
                   <button id="refreshPostsBtn" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">
                     🔄 刷新
                   </button>
                   <button id="updateRssBtn" style="padding: 8px 16px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">
                     📡 更新RSS
+                  </button>
+                  <button id="cleanupPostsBtn" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    🗑️ 清理旧数据
                   </button>
                 </div>
               </div>
@@ -373,8 +589,10 @@ export const DashboardPage: FC = () => {
 
             {/* 统计信息内容 */}
             <div id="stats" class="tab-content" style="padding: 30px; display: none;">
-              <h2 style="font-size: 20px; margin-bottom: 20px; color: #333;">📊 统计信息</h2>
-              <div id="statsContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; min-height: 300px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;" class="section-header">
+                <h2 style="font-size: 20px; color: #333; margin: 0;">📊 统计信息</h2>
+              </div>
+              <div id="statsContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; min-height: 300px;" class="stats-grid">
                 <div style="text-align: center; padding: 60px 20px; color: #999; grid-column: 1 / -1;">
                   加载中...
                 </div>

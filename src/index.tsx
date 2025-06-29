@@ -71,8 +71,8 @@ export default {
     try {
       const dbService = new DatabaseService(env.DB)
       
-      // 判断是否为数据清理任务（每天午夜执行）
-      if (cronExpression === '0 0 * * *') {
+      // 判断是否为数据清理任务（每小时执行）
+      if (cronExpression === '0 * * * *') {
         console.log('执行数据清理任务...')
         const cleanupResult = await dbService.cleanupOldPosts()
         console.log(`数据清理完成: 删除了 ${cleanupResult.deletedCount} 条过期记录`)

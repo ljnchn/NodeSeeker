@@ -765,6 +765,25 @@ apiRoutes.get('/stats/today', async (c) => {
   }
 })
 
+// 清理旧数据
+apiRoutes.post('/posts/cleanup', async (c) => {
+  try {
+    const dbService = c.get('dbService')
+    const result = await dbService.cleanupOldPosts()
+    
+    return c.json({
+      success: true,
+      data: result,
+      message: `数据清理完成，删除了 ${result.deletedCount} 条过期记录`
+    })
+  } catch (error) {
+    return c.json({
+      success: false,
+      message: `清理旧数据失败: ${error}`
+    }, 500)
+  }
+})
+
 // 获取性能监控指标
 apiRoutes.get('/performance/metrics', async (c) => {
   try {

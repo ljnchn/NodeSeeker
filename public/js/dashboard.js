@@ -119,6 +119,7 @@ function initEventListeners() {
     // 文章管理
     document.getElementById('refreshPostsBtn').addEventListener('click', loadPosts);
     document.getElementById('updateRssBtn').addEventListener('click', updateRSS);
+    document.getElementById('cleanupPostsBtn').addEventListener('click', cleanupOldPosts);
 }
 
 // 标签页切换
@@ -864,6 +865,40 @@ async function setCommands() {
     } catch (error) {
         console.error('设置命令菜单失败:', error);
         showMessage('设置命令菜单失败', 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+// 清理旧数据
+async function cleanupOldPosts() {
+    if (!confirm('确定要清理 24 小时以外的旧数据吗？\n\n此操作不可撤销，将删除所有 24 小时以外的文章记录。')) {
+        return;
+    }
+
+    const btn = document.getElementById('cleanupPostsBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-icon">⏳</span>清理中...';
+    btn.disabled = true;
+
+    try {
+        const response = await apiRequest('/api/posts/cleanup', 'POST');
+        
+        if (response.success) {
+            showMessage(response.message || '数据清理完成', 'success');
+            // 刷新文章列表以显示更新后的数据
+            await loadPosts();
+            // 刷新统计信息
+            if (document.getElementById('stats').classList.contains('active')) {
+                await loadStats();
+            }
+        } else {
+            showMessage(response.message || '清理旧数据失败', 'error');
+        }
+    } catch (error) {
+        console.error('清理旧数据失败:', error);
+        showMessage('清理旧数据失败', 'error');
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;

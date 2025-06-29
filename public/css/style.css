@@ -216,6 +216,7 @@ body {
   background: rgba(255, 255, 255, 0.1);
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.3);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -278,6 +279,7 @@ body {
   padding: 40px;
   border-radius: 20px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
 }
 
@@ -343,6 +345,7 @@ body {
   padding: 8px 16px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
@@ -667,6 +670,7 @@ body {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 20px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
 }
 
@@ -701,18 +705,22 @@ body {
   }
 
   .status-cards {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
   }
 
   .tab-buttons {
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
   }
 
   .tab-btn {
-    flex: 1;
-    min-width: 120px;
-    justify-content: center;
+    min-width: 100px;
+    white-space: nowrap;
+    padding: 12px 16px;
+    font-size: 13px;
   }
 
   .main-content {
@@ -741,7 +749,7 @@ body {
   }
 
   .stats-content {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .checkbox-label {
@@ -750,6 +758,43 @@ body {
 
   .btn {
     justify-content: center;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+  
+  /* 登录和初始化页面优化 */
+  .init-form,
+  .login-form {
+    margin: 20px auto;
+    padding: 24px;
+    max-width: 90vw;
+  }
+  
+  .init-form h1,
+  .login-form h1 {
+    font-size: 24px;
+  }
+  
+  .subtitle {
+    font-size: 14px;
+  }
+  
+  .form-input,
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 12px 14px;
+    font-size: 16px; /* 防止iOS放大输入框 */
+  }
+  
+  /* 表单布局优化 */
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+    margin-bottom: 6px;
   }
 }
 
@@ -818,13 +863,13 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* 响应式表格 */
+/* 小屏手机优化 */
 @media (max-width: 576px) {
-  .post-item .meta {
-    flex-direction: column;
-    gap: 8px;
+  .container {
+    padding: 0 12px;
   }
   
+  /* 页面头部 */
   .header-left h1 {
     font-size: 20px;
   }
@@ -843,6 +888,11 @@ body {
     font-size: 16px;
   }
   
+  /* 状态卡片 */
+  .status-cards {
+    grid-template-columns: 1fr;
+  }
+  
   .status-card {
     padding: 16px;
   }
@@ -855,5 +905,164 @@ body {
   
   .status-value {
     font-size: 20px;
+  }
+  
+  /* 标签页 */
+  .tab-btn {
+    padding: 10px 12px;
+    font-size: 12px;
+    min-width: 80px;
+  }
+  
+  /* 内容区域 */
+  .main-content {
+    padding: 15px 0;
+  }
+  
+  .modern-card {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .section-header h2 {
+    font-size: 18px;
+  }
+  
+  /* 表单优化 */
+  .form-input,
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 12px;
+    font-size: 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 18px;
+  }
+  
+  .form-group label {
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  
+  /* 按钮 */
+  .btn {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  .section-actions {
+    gap: 8px;
+  }
+  
+  .section-actions button {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  /* 列表项 */
+  .subscription-item,
+  .post-item {
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  
+  .subscription-item h4,
+  .post-item h4 {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  
+  .post-item .meta {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .post-item .meta span {
+    font-size: 12px;
+  }
+  
+  .post-item .content {
+    padding: 12px;
+    margin: 8px 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  
+  .actions {
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  
+  .actions button {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  /* 统计卡片 */
+  .stats-content {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .stat-card {
+    padding: 16px;
+  }
+  
+  .stat-card h3 {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  
+  .stat-card .number {
+    font-size: 24px;
+  }
+  
+  /* 登录和初始化页面 */
+  .init-form,
+  .login-form {
+    margin: 10px auto;
+    padding: 20px;
+    max-width: 95vw;
+  }
+  
+  .init-form h1,
+  .login-form h1 {
+    font-size: 20px;
+  }
+  
+  .subtitle {
+    font-size: 13px;
+  }
+  
+  /* 复选框 */
+  .checkbox-label {
+    padding: 10px;
+    font-size: 13px;
+  }
+  
+  .checkbox-custom {
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+  }
+  
+  /* 空状态 */
+  .empty-state {
+    padding: 30px 15px;
+  }
+  
+  .empty-state h3 {
+    font-size: 16px;
+  }
+  
+  .empty-state p {
+    font-size: 13px;
   }
 }

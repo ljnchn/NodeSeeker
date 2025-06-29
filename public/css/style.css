@@ -1066,3 +1066,24 @@ body {
     font-size: 13px;
   }
 }
+
+/* 推送设置表单的复选框样式覆盖 */
+.push-settings-form .checkbox-label input[type="checkbox"] {
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+.push-settings-form .checkbox-label {
+  cursor: pointer !important;
+}
+
+.push-settings-form .checkbox-label:hover {
+  background: #f0f7ff !important;
+  border-color: #3b82f6 !important;
+}

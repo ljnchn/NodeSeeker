@@ -499,22 +499,24 @@ export const DashboardPage: FC = () => {
               </div>
 
               {/* 推送设置区域 */}
-              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; border-left: 4px solid #9c27b0;margin-bottom: 30px;" class="config-section">
-                <h3 style="font-size: 16px; margin-bottom: 16px; color: #333;">📬 推送设置</h3>
+              <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; border-left: 4px solid #9c27b0;margin-bottom: 30px; min-height: 200px;" class="config-section" id="pushSettingsSection">
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: #333;">📬 推送设置 
+                  <span style="background: #ff4444; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">DEBUG: 可见</span>
+                </h3>
                 
-                <form id="pushSettingsForm" style="display: flex; flex-direction: column; gap: 20px;" class="push-settings-form">
+                <form id="pushSettingsForm" style="display: flex !important; flex-direction: column; gap: 20px;" class="push-settings-form">
                   <div style="display: flex; flex-direction: column; gap: 16px;">
                     <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;" class="checkbox-label">
-                      <input type="checkbox" id="stopPush" name="stopPush" style="margin: 0; transform: scale(1.2);" />
-                      <div>
+                      <input type="checkbox" id="stopPush" name="stopPush" style="width: 18px; height: 18px; cursor: pointer; margin: 0;" />
+                      <div style="pointer-events: none;">
                         <div style="font-weight: 500; color: #333;">停止推送</div>
                         <div style="font-size: 12px; color: #666;">勾选后将暂停所有 Telegram 消息推送</div>
                       </div>
                     </label>
                     
                     <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 12px; background: white; border-radius: 6px; border: 1px solid #e0e0e0;" class="checkbox-label">
-                      <input type="checkbox" id="onlyTitle" name="onlyTitle" style="margin: 0; transform: scale(1.2);" />
-                      <div>
+                      <input type="checkbox" id="onlyTitle" name="onlyTitle" style="width: 18px; height: 18px; cursor: pointer; margin: 0;" />
+                      <div style="pointer-events: none;">
                         <div style="font-weight: 500; color: #333;">只匹配标题</div>
                         <div style="font-size: 12px; color: #666;">勾选后仅在文章标题中搜索关键词，不搜索内容</div>
                       </div>

@@ -5,6 +5,12 @@ let currentConfig = {};
 let botInfo = null;
 let userInfo = null;
 
+// 文章列表相关变量
+let currentPage = 1;
+let isLoading = false;
+let hasMorePosts = true;
+let currentFilters = {};
+
 document.addEventListener('DOMContentLoaded', function() {
     // 检查认证状态
     checkAuth();
@@ -117,9 +123,22 @@ function initEventListeners() {
     document.getElementById('addSubForm').addEventListener('submit', handleAddSubscription);
     
     // 文章管理
-    document.getElementById('refreshPostsBtn').addEventListener('click', loadPosts);
+    document.getElementById('refreshPostsBtn').addEventListener('click', () => loadPosts(true));
     document.getElementById('updateRssBtn').addEventListener('click', updateRSS);
     document.getElementById('cleanupPostsBtn').addEventListener('click', cleanupOldPosts);
+    
+    // 筛选功能
+    document.getElementById('applyFiltersBtn').addEventListener('click', applyFilters);
+    
+    // 加载更多
+    document.getElementById('loadMoreBtn').addEventListener('click', loadMorePosts);
+    
+    // 筛选输入框回车键触发
+    document.getElementById('filterCreator').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            applyFilters();
+        }
+    });
 }
 
 // 标签页切换
@@ -673,54 +692,230 @@ async function deleteSubscription(id) {
 }
 
 // 加载文章列表
-async function loadPosts() {
+async function loadPosts(reset = true) {
+    if (isLoading) return;
+    
+    // 如果是重置加载，重置分页状态
+    if (reset) {
+        currentPage = 1;
+        hasMorePosts = true;
+        document.getElementById('postsList').innerHTML = '';
+        document.getElementById('loadMoreContainer').style.display = 'none';
+        document.getElementById('noMoreData').style.display = 'none';
+        document.getElementById('postsInfo').style.display = 'none';
+    }
+    
+    isLoading = true;
+    
     try {
-        const response = await apiRequest('/api/posts', 'GET');
+        // 构建查询参数
+        const params = new URLSearchParams({
+            page: currentPage.toString(),
+            limit: '20'
+        });
+        
+        // 添加筛选参数
+        if (currentFilters.category) params.append('category', currentFilters.category);
+        if (currentFilters.pushStatus !== undefined && currentFilters.pushStatus !== '') {
+            params.append('push_status', currentFilters.pushStatus);
+        }
+        if (currentFilters.creator) params.append('creator', currentFilters.creator);
+        
+        const response = await apiRequest(`/api/posts?${params.toString()}`, 'GET');
         
         if (response.success) {
-            renderPosts(response.data);
+            const { data: posts, pagination } = response;
+            
+            if (reset) {
+                renderPosts(posts, true);
+                updatePostsInfo(pagination);
+            } else {
+                renderPosts(posts, false);
+            }
+            
+            // 更新分页状态
+            currentPage = pagination.page + 1;
+            hasMorePosts = pagination.page < pagination.totalPages;
+            
+            // 更新加载更多按钮显示状态
+            updateLoadMoreButton();
+            
         } else {
             showMessage(response.message || '加载文章失败', 'error');
         }
     } catch (error) {
         console.error('加载文章失败:', error);
         showMessage('加载文章失败', 'error');
+    } finally {
+        isLoading = false;
     }
 }
 
 // 渲染文章列表
-function renderPosts(posts) {
+function renderPosts(posts, reset = true) {
     const container = document.getElementById('postsList');
     
-    if (posts.length === 0) {
+    if (reset && posts.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <h3>📰 暂无文章</h3>
-                <p>还没有检测到匹配的文章</p>
+                <p>没有找到符合条件的文章</p>
             </div>
         `;
         return;
     }
     
-    container.innerHTML = posts.map(post => `
-        <div class="post-item">
-            <h4>
-                <a href="https://www.nodeseek.com/post-${post.post_id}-1" target="_blank" rel="noopener noreferrer">
-                    ${post.title}
-                </a>
-            </h4>
-            <div class="meta">
-                <span>📅 ${new Date(post.pub_date).toLocaleString()}</span>
-                ${post.creator ? `<span>👤 ${post.creator}</span>` : ''}
-                ${post.category ? `<span>📂 ${post.category}</span>` : ''}
-            </div>
-            ${post.memo ? `
-                <div class="content">
-                    ${post.memo}
+    // 如果是重置，清空容器
+    if (reset) {
+        container.innerHTML = '';
+    }
+    
+    // 添加新的文章项
+    const postsHtml = posts.map(post => {
+        // 推送状态显示
+        let pushStatusText = '';
+        let pushStatusColor = '';
+        switch (post.push_status) {
+            case 0:
+                pushStatusText = '⏳ 未推送';
+                pushStatusColor = '#ff9800';
+                break;
+            case 1:
+                pushStatusText = '✅ 已推送';
+                pushStatusColor = '#4caf50';
+                break;
+            case 2:
+                pushStatusText = '🚫 无需推送';
+                pushStatusColor = '#9e9e9e';
+                break;
+        }
+        
+        return `
+            <div class="post-item">
+                <h4>
+                    <a href="https://www.nodeseek.com/post-${post.post_id}-1" target="_blank" rel="noopener noreferrer">
+                        ${post.title}
+                    </a>
+                </h4>
+                <div class="meta">
+                    <span>📅 ${new Date(post.pub_date).toLocaleString()}</span>
+                    ${post.creator ? `<span>👤 ${post.creator}</span>` : ''}
+                    ${post.category ? `<span>📂 ${getCategoryName(post.category)}</span>` : ''}
+                    <span style="color: ${pushStatusColor}; font-weight: 500;">${pushStatusText}</span>
                 </div>
-            ` : ''}
-        </div>
-    `).join('');
+                ${post.memo ? `
+                    <div class="content">
+                        ${post.memo}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+    
+    container.insertAdjacentHTML('beforeend', postsHtml);
+}
+
+// 获取分类显示名称
+function getCategoryName(category) {
+    const categoryMap = {
+        'daily': '📅 日常',
+        'tech': '💻 技术',
+        'info': 'ℹ️ 情报',
+        'review': '⭐ 测评',
+        'trade': '💰 交易',
+        'carpool': '🚗 拼车',
+        'promotion': '📢 推广',
+        'life': '🏠 生活',
+        'dev': '⚡ Dev',
+        'photo': '📷 贴图',
+        'expose': '🚨 曝光',
+        'sandbox': '🏖️ 沙盒'
+    };
+    return categoryMap[category] || category;
+}
+
+// 更新文章信息显示
+function updatePostsInfo(pagination) {
+    const infoDiv = document.getElementById('postsInfo');
+    const infoText = document.getElementById('postsInfoText');
+    
+    if (pagination.total > 0) {
+        let filterText = '';
+        const activeFilters = [];
+        
+        if (currentFilters.category) {
+            activeFilters.push(`分类: ${getCategoryName(currentFilters.category)}`);
+        }
+        if (currentFilters.pushStatus !== undefined && currentFilters.pushStatus !== '') {
+            const statusMap = {
+                '0': '未推送',
+                '1': '已推送', 
+                '2': '无需推送'
+            };
+            activeFilters.push(`推送状态: ${statusMap[currentFilters.pushStatus]}`);
+        }
+        if (currentFilters.creator) {
+            activeFilters.push(`创建者: ${currentFilters.creator}`);
+        }
+        
+        if (activeFilters.length > 0) {
+            filterText = ` (筛选条件: ${activeFilters.join(', ')})`;
+        }
+        
+        infoText.textContent = `共找到 ${pagination.total} 篇文章，当前显示第 1-${Math.min(pagination.page * pagination.limit, pagination.total)} 篇${filterText}`;
+        infoDiv.style.display = 'block';
+    } else {
+        infoDiv.style.display = 'none';
+    }
+}
+
+// 更新加载更多按钮状态
+function updateLoadMoreButton() {
+    const loadMoreContainer = document.getElementById('loadMoreContainer');
+    const noMoreData = document.getElementById('noMoreData');
+    
+    if (hasMorePosts) {
+        loadMoreContainer.style.display = 'block';
+        noMoreData.style.display = 'none';
+    } else {
+        loadMoreContainer.style.display = 'none';
+        if (currentPage > 1) { // 只有当已经加载了数据时才显示"已显示全部"
+            noMoreData.style.display = 'block';
+        }
+    }
+}
+
+// 应用筛选条件
+function applyFilters() {
+    const category = document.getElementById('filterCategory').value;
+    const pushStatus = document.getElementById('filterPushStatus').value;
+    const creator = document.getElementById('filterCreator').value.trim();
+    
+    currentFilters = {
+        category: category || undefined,
+        pushStatus: pushStatus || undefined,
+        creator: creator || undefined
+    };
+    
+    // 重置分页并重新加载
+    loadPosts(true);
+}
+
+// 加载更多文章
+async function loadMorePosts() {
+    if (!hasMorePosts || isLoading) return;
+    
+    const btn = document.getElementById('loadMoreBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-icon">⏳</span>加载中...';
+    btn.disabled = true;
+    
+    try {
+        await loadPosts(false);
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
 }
 
 // 更新 RSS

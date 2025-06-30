@@ -620,10 +620,73 @@ export const DashboardPage: FC = () => {
                 </div>
               </div>
               
+              {/* 筛选区域 */}
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;" class="filters-section">
+                <h3 style="font-size: 16px; margin-bottom: 16px; color: #333;">🔍 筛选条件</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;" class="filter-grid">
+                  <div>
+                    <label for="filterCategory" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">分类</label>
+                    <select id="filterCategory" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                      <option value="">全部分类</option>
+                      <option value="daily">📅 日常</option>
+                      <option value="tech">💻 技术</option>
+                      <option value="info">ℹ️ 情报</option>
+                      <option value="review">⭐ 测评</option>
+                      <option value="trade">💰 交易</option>
+                      <option value="carpool">🚗 拼车</option>
+                      <option value="promotion">📢 推广</option>
+                      <option value="life">🏠 生活</option>
+                      <option value="dev">⚡ Dev</option>
+                      <option value="photo">📷 贴图</option>
+                      <option value="expose">🚨 曝光</option>
+                      <option value="sandbox">🏖️ 沙盒</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label for="filterPushStatus" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">推送状态</label>
+                    <select id="filterPushStatus" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                      <option value="">全部状态</option>
+                      <option value="0">⏳ 未推送</option>
+                      <option value="1">✅ 已推送</option>
+                      <option value="2">🚫 无需推送</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label for="filterCreator" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">创建者</label>
+                    <input type="text" id="filterCreator" placeholder="输入用户名" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" />
+                  </div>
+                  
+                  <div style="display: flex; align-items: end;">
+                    <button id="applyFiltersBtn" style="padding: 8px 16px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">
+                      🔍 应用筛选
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* 文章列表状态信息 */}
+              <div id="postsInfo" style="display: none; margin-bottom: 16px; padding: 12px; background: #e3f2fd; border-radius: 6px; color: #1976d2; font-size: 14px;">
+                <span id="postsInfoText"></span>
+              </div>
+              
               <div id="postsList" style="min-height: 400px;">
                 <div style="text-align: center; padding: 60px 20px; color: #999;">
                   加载中...
                 </div>
+              </div>
+              
+              {/* 加载更多按钮 */}
+              <div id="loadMoreContainer" style="text-align: center; margin-top: 20px; display: none;">
+                <button id="loadMoreBtn" style="padding: 12px 24px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                  📄 加载更多
+                </button>
+              </div>
+              
+              {/* 没有更多数据提示 */}
+              <div id="noMoreData" style="text-align: center; margin-top: 20px; color: #999; font-size: 14px; display: none;">
+                📝 已显示全部文章
               </div>
             </div>
 

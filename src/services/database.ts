@@ -443,47 +443,36 @@ export class DatabaseService {
     
     // 构建查询条件
     let whereClause = '';
-    let countWhereClause = '';
     const params: any[] = [];
-    const countParams: any[] = [];
     
     if (filters) {
       const conditions: string[] = [];
       
-      if (filters.pushStatus !== undefined) {
+      if (filters.pushStatus !== undefined && filters.pushStatus !== null && filters.pushStatus.toString() !== '') {
         conditions.push('push_status = ?');
         params.push(filters.pushStatus);
-        countParams.push(filters.pushStatus);
       }
       
       if (filters.creator) {
         conditions.push('creator LIKE ?');
         params.push(`%${filters.creator}%`);
-        countParams.push(`%${filters.creator}%`);
       }
       
       if (filters.category) {
         conditions.push('category LIKE ?');
         params.push(`%${filters.category}%`);
-        countParams.push(`%${filters.category}%`);
-      }
-      
-      if (filters.startDate) {
-        conditions.push('DATE(pub_date) >= ?');
-        params.push(filters.startDate);
-        countParams.push(filters.startDate);
-      }
-      
-      if (filters.endDate) {
-        conditions.push('DATE(pub_date) <= ?');
-        params.push(filters.endDate);
-        countParams.push(filters.endDate);
       }
       
       if (conditions.length > 0) {
         whereClause = 'WHERE ' + conditions.join(' AND ');
-        countWhereClause = whereClause;
       }
+    }
+
+    // 只查询最近24小时的数据
+    if (whereClause === '') {
+      whereClause = 'WHERE created_at >= datetime(\'now\', \'-24 hours\')';
+    } else {
+      whereClause = 'WHERE ' + whereClause + ' AND created_at >= datetime(\'now\', \'-24 hours\')';
     }
     
     // 执行并发查询
@@ -497,9 +486,8 @@ export class DatabaseService {
       
       this.db.prepare(`
         SELECT COUNT(*) as count FROM posts 
-        WHERE pub_date >= datetime('now', '-24 hours')
-        ${countWhereClause}
-      `).bind(...countParams).first()
+        ${whereClause}
+      `).bind(...params).first()
     ]);
     
     const total = (countResult as any)?.count || 0;

@@ -430,8 +430,6 @@ export class DatabaseService {
       pushStatus?: number;
       creator?: string;
       category?: string;
-      startDate?: string;
-      endDate?: string;
     }
   ): Promise<{
     posts: Post[];
@@ -442,12 +440,13 @@ export class DatabaseService {
     const offset = (page - 1) * limit;
     
     // 构建查询条件
-    let whereClause = '';
+    const conditions: string[] = [];
     const params: any[] = [];
     
+    // 始终查询最近24小时的数据
+    conditions.push("created_at >= datetime('now', '-24 hours')");
+
     if (filters) {
-      const conditions: string[] = [];
-      
       if (filters.pushStatus !== undefined && filters.pushStatus !== null && filters.pushStatus.toString() !== '') {
         conditions.push('push_status = ?');
         params.push(filters.pushStatus);
@@ -462,18 +461,9 @@ export class DatabaseService {
         conditions.push('category LIKE ?');
         params.push(`%${filters.category}%`);
       }
-      
-      if (conditions.length > 0) {
-        whereClause = 'WHERE ' + conditions.join(' AND ');
-      }
     }
-
-    // 只查询最近24小时的数据
-    if (whereClause === '') {
-      whereClause = 'WHERE created_at >= datetime(\'now\', \'-24 hours\')';
-    } else {
-      whereClause = 'WHERE ' + whereClause + ' AND created_at >= datetime(\'now\', \'-24 hours\')';
-    }
+    
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     
     // 执行并发查询
     const [postsResult, countResult] = await Promise.all([

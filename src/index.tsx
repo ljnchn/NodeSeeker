@@ -70,14 +70,6 @@ export default {
 
     try {
       const dbService = new DatabaseService(env.DB)
-      
-      // 判断是否为数据清理任务（每小时执行）
-      if (cronExpression === '0 * * * *') {
-        console.log('执行数据清理任务...')
-        const cleanupResult = await dbService.cleanupOldPosts()
-        console.log(`数据清理完成: 删除了 ${cleanupResult.deletedCount} 条过期记录`)
-        return
-      }
 
       // RSS抓取和推送任务（每分钟执行）
       const config = await dbService.getBaseConfig()
@@ -102,6 +94,10 @@ export default {
         const pushResult = await matcherService.processUnpushedPosts()
         console.log(`推送完成: 推送 ${pushResult.pushed} 篇文章`)
       }
+      // 3. 数据清理任务
+      console.log('执行数据清理任务...')
+      const cleanupResult = await dbService.cleanupOldPosts()
+      console.log(`数据清理完成: 删除了 ${cleanupResult.deletedCount} 条过期记录`)
 
     } catch (error) {
       console.error('定时任务执行失败:', error)

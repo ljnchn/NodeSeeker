@@ -1,5 +1,9 @@
 # 🚀 NodeSeek RSS 监控系统
 
+Docker 版本请移步 ➡️ [NodeSeeker-docker](https://github.com/ljnchn/NodeSeeker-docker)
+
+---
+
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/ljnchn/NodeSeeker.git)
 
 一个基于 Cloudflare Workers 的智能 RSS 监控和 Telegram 推送系统，专门用于监控 NodeSeek 社区的最新动态。
